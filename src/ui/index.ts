@@ -42,6 +42,7 @@ export {
   SelectTrigger,
   SelectValue,
 } from './select.js';
+export { Sidebar } from './sidebar.js';
 export { default as StatusDot } from './status-dot.js';
 export { Switch } from './switch.js';
 export { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from './table.js';

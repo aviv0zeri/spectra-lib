@@ -36,10 +36,34 @@ this one — see "Consuming it" for why and how each site pulls it in.
 extracted 2026-08-20 from GateOpen's Dashboard after an audit found the same
 ~20 files hand-copied, mostly byte-identical, into bagStore, SpectraHub and
 Raptor2's Dashboards (each with its own lineage comments pointing back at
-GateOpen). `Layout`/`Sidebar`/`ErrorBoundary` were left out on purpose — those
-had genuinely diverged in props/behavior per project, not just in styling,
-and need a real composition redesign before they're one shared component
-rather than a copy that happens to still compile.
+GateOpen). `Layout`/`ErrorBoundary` are left out on purpose — those had
+genuinely diverged in props/behavior per project, not just in styling, and
+need a real composition redesign before they're one shared component rather
+than a copy that happens to still compile.
+
+**`Sidebar`** joined the set later the same day, once its shell was
+generalized rather than just copied: the visual style constants
+(`NAV_ITEM_BASE`/`ACTIVE`, the glass rail, the three-zone layout) were
+near-byte-identical across all three projects' independently-simplified
+copies — a real signal, unlike `Layout`/`Sidebar`'s previous entry here —
+but the actual navigation mechanism wasn't: GateOpen/bagStore switch tabs via
+a callback with no router, Raptor2 uses real `react-router` `NavLink`s. So
+`Sidebar` takes a data-driven `items` array where each item is polymorphic
+(`as` + whatever extra props that component needs, e.g. `to` for `NavLink`;
+defaults to a plain button) rather than assuming either navigation model, and
+a generic `footer` slot (`{ icon, tooltip, onClick | as+to, active }`) rather
+than assuming a footer is a user avatar — Raptor2's is a token-configured
+status badge with no user identity at all. `transitionMs` (GateOpen: `0`,
+rejected an animated collapse as sluggish; bagStore/Raptor2: `120`) and
+`isRtl` (GateOpen/bagStore only) are per-consumer config, not baked in.
+Nested disclosure groups (`item.subItems`) exist because GateOpen needs three
+of them (Phone/Settlements/Billing); bagStore's own pre-migration comment on
+this file already said the flat-list shape was "worth copying back over the
+day a section here earns sub-items" — same reasoning, generalized. Expects
+`--nav-nest-fill`/`--nav-nest-shadow` (used only if any item has `subItems`)
+in addition to the shared token contract below, plus `.nav-text-glow` /
+`.nav-text-glow-active` in the consumer's CSS for the row hover/active
+transition and text-shadow.
 
 These read GateOpen's own semantic Tailwind tokens (`bg-primary`,
 `text-foreground`, `bg-card`, `border-border`, plus raw CSS custom properties
