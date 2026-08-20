@@ -1,6 +1,6 @@
 {
   "name": "gateopen-design-kit",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "private": true,
   "description": "GateOpen's shared design tokens — single source for colors used across Dashboard, Website, and MobileApp.",
   "type": "module",

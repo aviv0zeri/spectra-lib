@@ -17,18 +17,21 @@
  * - Border radius. Dashboard's tighter, Website's rounder — reads as the
  *   same kind of deliberate register difference as their Button shapes
  *   (admin tool vs marketing site), not measured drift.
+ * - `chipActiveFill`/`primaryBtnLabel`. These exist in MobileApp's source
+ *   file but are implementation details derived from accent + a specific
+ *   widget's surface (one has a whole comment about a segmented-control
+ *   track), not confirmed shared concepts — Dashboard/Website have no
+ *   token by these names today. Each app can derive its own from `accent`
+ *   if it needs one; don't force MobileApp's specific derivation on them.
  *
  * Source of truth is MobileApp's src/lib/themePalettes.js, the most
- * complete of the three -- these are its `accent`/`chipActiveFill`/
- * `primaryBtnLabel`/`ok`/`okBright`/`warn`/`bad` fields (blue accent
- * variant only; the other 4 accent choices are a MobileApp-only picker
- * feature, not part of the shared surface).
+ * complete of the three -- these are its `accent`/`ok`/`okBright`/`warn`/
+ * `bad` fields (blue accent variant only; the other 4 accent choices are a
+ * MobileApp-only picker feature, not part of the shared surface).
  */
 
 export const DARK = {
   accent: '#8b9dc3',
-  chipActiveFill: '#2b3247',
-  primaryBtnLabel: '#0c0c0e',
   // ok/warn retuned 2026-08-19 (product feedback: the saturated originals
   // read as stock template colors, not GateOpen's). See MobileApp's
   // themePalettes.js for the full history -- this package always tracks
@@ -41,8 +44,6 @@ export const DARK = {
 
 export const LIGHT = {
   accent: '#3d5580',
-  chipActiveFill: '#e4eaf5',
-  primaryBtnLabel: '#ffffff',
   ok: '#3c7a5e',
   okBright: '#5aa17d',
   warn: '#a17a2c',
