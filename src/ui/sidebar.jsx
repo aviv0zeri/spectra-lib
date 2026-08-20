@@ -195,11 +195,9 @@ export function Sidebar({
     }
   }
 
-  // Disclosure groups (items with subItems) auto-expand exactly once, the
-  // moment any of their sub-items becomes active — same "Finder Favorites"
-  // feel as GateOpen's original three (Phone/Settlements/Billing) groups,
-  // generalized to however many groups a consumer passes. Manual toggling
-  // after that first auto-expand is untouched by this effect.
+  // Disclosure groups (items with subItems) are an accordion — opening one
+  // collapses whichever other group was open, manually or via auto-expand
+  // below. At most one group is ever expanded at a time.
   const [expandedGroups, setExpandedGroups] = useState(/** @type {Record<string, boolean>} */ ({}));
   const activeGroupIdsKey = items
     .filter(hasSubItems)
@@ -221,8 +219,10 @@ export function Sidebar({
     const newlyActive = [...current].filter((id) => !prev.has(id));
     activeGroupIdsRef.current = current;
     if (newlyActive.length === 0) return;
-    setExpandedGroups((s) => {
-      const next = { ...s };
+    setExpandedGroups(() => {
+      // Not a spread of the previous state -- a newly-active group replaces
+      // whatever was open, same as a manual click does below.
+      const next = /** @type {Record<string, boolean>} */ ({});
       for (const id of newlyActive) next[id] = true;
       return next;
     });
@@ -319,7 +319,10 @@ export function Sidebar({
           const groupOpen = Boolean(expandedGroups[item.id]);
           const subItems = item.subItems ?? [];
           const groupActive = subItems.some((s) => s.active);
-          const toggle = () => setExpandedGroups((s) => ({ ...s, [item.id]: !s[item.id] }));
+          // Closing: drop to {} (nothing open). Opening: replace the whole
+          // state with just this group, so whatever else was open closes.
+          const toggle = () =>
+            setExpandedGroups((s) => (s[item.id] ? {} : { [item.id]: true }));
           const toggleLabel =
             groupExpandLabel?.(item, groupOpen) ??
             (groupOpen ? `Collapse ${item.label}` : `Expand ${item.label}`);
