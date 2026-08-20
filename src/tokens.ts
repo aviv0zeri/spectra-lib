@@ -30,7 +30,15 @@
  * MobileApp-only picker feature, not part of the shared surface).
  */
 
-export const DARK = {
+export interface SemanticTokens {
+  accent: string;
+  ok: string;
+  okBright: string;
+  warn: string;
+  bad: string;
+}
+
+export const DARK: SemanticTokens = {
   accent: '#8b9dc3',
   // ok/warn retuned 2026-08-19 (product feedback: the saturated originals
   // read as stock template colors, not GateOpen's). See MobileApp's
@@ -42,7 +50,7 @@ export const DARK = {
   bad: '#c2685f',
 };
 
-export const LIGHT = {
+export const LIGHT: SemanticTokens = {
   accent: '#3d5580',
   ok: '#3c7a5e',
   okBright: '#5aa17d',

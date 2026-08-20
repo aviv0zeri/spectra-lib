@@ -7,14 +7,14 @@ hand-duplicated per-project.
 
 ## What's in here today
 
-Currently just GateOpen's design tokens (`src/tokens.js`, `DARK`/`LIGHT` —
+Currently just GateOpen's design tokens (`src/tokens.ts`, `DARK`/`LIGHT` —
 the semantic tones each of GateOpen's Dashboard/Website/MobileApp reads from
 instead of hardcoding a duplicate). It exists because they didn't agree: on
 2026-08-19, MobileApp's status colors got retuned for a product-feedback
 pass and neither web app picked up the change — each of the three had been
 hand-maintaining its own copy of values that were meant to be identical.
 
-See the comment at the top of `tokens.js` for exactly what's included and,
+See the comment at the top of `tokens.ts` for exactly what's included and,
 just as deliberately, what's left out (surface colors, Dashboard's accent,
 radius) and why — those are structural or open-decision differences between
 GateOpen's apps specifically, not drift.
@@ -29,8 +29,21 @@ Each project takes this as a git dependency, not a published registry
 package:
 
 ```json
-"spectra-lib": "github:aviv0zeri/spectra-lib#v0.2.1"
+"spectra-lib": "github:aviv0zeri/spectra-lib#v0.3.0"
 ```
+
+Written in TypeScript, compiled on install. `npm`'s `prepare` lifecycle script
+runs automatically for git dependencies specifically (there's no registry-side
+build step for those, which is exactly what `prepare` exists for) — so a
+consumer's plain `npm install` triggers this package's own `tsc` before the
+consumer ever sees it, and `dist/` (gitignored here) is what actually ships.
+This is why `.d.ts` type declarations are generated FROM the real
+implementation, not hand-maintained alongside it — the earlier all-JS version
+of this package shipped a hand-written declaration file that could (and once
+almost did) silently drift from the actual exports, which is the exact class
+of bug this whole package exists to prevent. Consumers don't need to be
+TypeScript themselves — plain JS/JSDoc projects `import` from this normally,
+same as any other npm package.
 
 If you set this by hand and then run `npm install`, verify `package-lock.json`'s
 `node_modules/spectra-lib` entry actually resolved to the new tag's commit —

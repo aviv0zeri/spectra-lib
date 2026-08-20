@@ -1,20 +1,27 @@
 {
   "name": "spectra-lib",
-  "version": "0.2.3",
+  "version": "0.3.0",
   "private": true,
   "description": "Aviv's personal shared library -- reusable components/tokens/utilities that span more than one project. Currently: GateOpen's design tokens (single source for colors used across Dashboard, Website, and MobileApp).",
   "type": "module",
-  "main": "src/tokens.js",
-  "types": "src/tokens.d.ts",
+  "main": "dist/tokens.js",
+  "types": "dist/tokens.d.ts",
   "exports": {
     ".": {
-      "types": "./src/tokens.d.ts",
-      "default": "./src/tokens.js"
+      "types": "./dist/tokens.d.ts",
+      "default": "./dist/tokens.js"
     }
   },
   "files": [
-    "src"
+    "dist"
   ],
+  "scripts": {
+    "build": "tsc",
+    "prepare": "npm run build"
+  },
+  "devDependencies": {
+    "typescript": "^5.9.3"
+  },
   "engines": {
     "node": ">=20.19.0"
   }
