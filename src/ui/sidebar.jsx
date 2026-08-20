@@ -207,6 +207,11 @@ export function Sidebar({
     transitionMs > 0
       ? `transition-[width] duration-[${transitionMs}ms] ease-out [will-change:width]`
       : '';
+  // Labels fade/collapse in sync with the rail width -- without this they'd
+  // snap instantly while the rail itself animates over transitionMs, which
+  // reads as broken rather than snappy.
+  const labelTransitionClass =
+    transitionMs > 0 ? `transition-[max-width,opacity] duration-[${transitionMs}ms]` : '';
 
   /** @param {SidebarNavItem} item, @param {boolean} sub */
   function renderRow(item, sub) {
@@ -227,7 +232,11 @@ export function Sidebar({
       >
         {Icon ? <Icon size={sub ? 15 : 17} className="shrink-0" /> : null}
         <span
-          className={cn(NAV_LABEL_BASE, navCollapsed ? NAV_LABEL_COLLAPSED : NAV_LABEL_EXPANDED)}
+          className={cn(
+            NAV_LABEL_BASE,
+            labelTransitionClass,
+            navCollapsed ? NAV_LABEL_COLLAPSED : NAV_LABEL_EXPANDED,
+          )}
           aria-hidden="true"
         >
           {label}
@@ -298,6 +307,7 @@ export function Sidebar({
                   <span
                     className={cn(
                       NAV_LABEL_BASE,
+                      labelTransitionClass,
                       navCollapsed ? NAV_LABEL_COLLAPSED : NAV_LABEL_EXPANDED,
                     )}
                     aria-hidden="true"
