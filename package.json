@@ -1,12 +1,16 @@
 {
   "name": "gateopen-design-kit",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "private": true,
   "description": "GateOpen's shared design tokens — single source for colors used across Dashboard, Website, and MobileApp.",
   "type": "module",
   "main": "src/tokens.js",
+  "types": "src/tokens.d.ts",
   "exports": {
-    ".": "./src/tokens.js"
+    ".": {
+      "types": "./src/tokens.d.ts",
+      "default": "./src/tokens.js"
+    }
   },
   "files": [
     "src"
