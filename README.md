@@ -20,7 +20,7 @@ differences between the apps, not drift.
 Each app takes this as a git dependency, not a published registry package:
 
 ```json
-"gateopen-design-kit": "git+https://github.com/<owner>/gateopen-design-kit.git#v0.1.0"
+"gateopen-design-kit": "git+ssh://git@github.com/aviv0zeri/gateopen-design-kit.git#v0.2.0"
 ```
 
 Pin to a tag, not a branch — a consumer should only pick up a token change
