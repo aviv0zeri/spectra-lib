@@ -1,6 +1,6 @@
 {
   "name": "spectra-lib",
-  "version": "0.2.1",
+  "version": "0.2.3",
   "private": true,
   "description": "Aviv's personal shared library -- reusable components/tokens/utilities that span more than one project. Currently: GateOpen's design tokens (single source for colors used across Dashboard, Website, and MobileApp).",
   "type": "module",
