@@ -7,17 +7,25 @@ hand-duplicated per-project.
 
 ## What's in here today
 
-Currently just GateOpen's design tokens (`src/tokens.ts`, `DARK`/`LIGHT` —
-the semantic tones each of GateOpen's Dashboard/Website/MobileApp reads from
-instead of hardcoding a duplicate). It exists because they didn't agree: on
-2026-08-19, MobileApp's status colors got retuned for a product-feedback
-pass and neither web app picked up the change — each of the three had been
-hand-maintaining its own copy of values that were meant to be identical.
+**`src/tokens.ts`** — GateOpen's design tokens, `DARK`/`LIGHT` semantic tones
+each of GateOpen's Dashboard/Website/MobileApp reads from instead of
+hardcoding a duplicate. Exists because they didn't agree: on 2026-08-19,
+MobileApp's status colors got retuned for a product-feedback pass and neither
+web app picked up the change — each of the three had been hand-maintaining
+its own copy of values that were meant to be identical. A real npm package
+(TypeScript, compiled on install — see "Consuming it" below).
 
 See the comment at the top of `tokens.ts` for exactly what's included and,
 just as deliberately, what's left out (surface colors, Dashboard's accent,
 radius) and why — those are structural or open-decision differences between
 GateOpen's apps specifically, not drift.
+
+**`chrome/`** — cv and portfolio's shared foundation: tokens, aurora, glass,
+topbar, and a nav rail (a port of GateOpen Dashboard's `Sidebar.jsx` to plain
+CSS). `chrome.css` + `dom.js` (just `el()` — their `get(path)` helpers looked
+identical but are each closured over that file's own data object, not pure
+functions, so left local). Plain files, no build step, no npm package for
+this one — see "Consuming it" for why and how each site pulls it in.
 
 More projects' reusable pieces land here over time, each in its own
 subpath/export as they're extracted — this file's job is to stay accurate
@@ -61,6 +69,19 @@ CSS-custom-property layer directly, so each has a small generator script
 that reads this package and writes the handful of `--accent`/`--ok`/
 `--warn`/`--bad` lines into its own theme.css — everything else in those
 files stays hand-maintained locally, on purpose.
+
+### `chrome/` is different: no npm, plain file copy
+
+cv and portfolio have no build step at all, by design (`open index.html in a
+browser`) — an npm dependency would be a bigger ask than what they're built
+around. Instead, each site has its own `sync-chrome.mjs` (checked into that
+site's repo) that copies `chrome/chrome.css` and `chrome/dom.js` in from this
+repo's local checkout, assuming sibling directories under the same parent
+(true on this machine, not portable elsewhere on purpose — this only ever
+needs to run at authoring time, since both sites deploy via `rsync` of
+already-authored static files, not CI). Run the site's `sync-chrome.mjs`
+after pulling a spectra-lib change, review the diff, commit the result like
+any other asset.
 
 ## Versioning
 
