@@ -27,6 +27,39 @@ identical but are each closured over that file's own data object, not pure
 functions, so left local). Plain files, no build step, no npm package for
 this one — see "Consuming it" for why and how each site pulls it in.
 
+**`src/ui/`** (`spectra-lib/ui`) — the Radix-based dashboard UI component set
+(`Button`, `Card`, `Badge`, `Select`, `Table`, `Dialog`, `ConfirmDialog`,
+`TypeNameConfirmDialog`, `Input`, `Label`, `Switch`, `ToggleField`,
+`Dropdown`, `KebabMenu`, `NestedSidebar`, `Toast`, `CreateButton`,
+`UnsupportedDeviceGate`, plus the `PageShell`/`PageHeader`/`PageGrid`/
+`PageEmpty`/`PageMessage`/`StatusDot`/`EmptyComingSoon` page-shell pieces),
+extracted 2026-08-20 from GateOpen's Dashboard after an audit found the same
+~20 files hand-copied, mostly byte-identical, into bagStore, SpectraHub and
+Raptor2's Dashboards (each with its own lineage comments pointing back at
+GateOpen). `Layout`/`Sidebar`/`ErrorBoundary` were left out on purpose — those
+had genuinely diverged in props/behavior per project, not just in styling,
+and need a real composition redesign before they're one shared component
+rather than a copy that happens to still compile.
+
+These read GateOpen's own semantic Tailwind tokens (`bg-primary`,
+`text-foreground`, `bg-card`, `border-border`, plus raw CSS custom properties
+like `--ok`/`--warn`/`--bad`/`--accent`/`--scrim`) rather than hardcoding any
+palette — every consumer defines its own literal values for those in its own
+theme.css, same convention already used for `tokens.ts`'s DARK/LIGHT export.
+`EmptyComingSoon` additionally expects `--panel`, `--panel2`, `--shadow-cast`
+and `--tile-sunk` (the last two are computed/derived values in GateOpen's
+theme.css, not raw palette entries) — a consumer missing those needs to add
+them before that component looks right. `TypeNameConfirmDialog` and
+`UnsupportedDeviceGate` take all copy as props (`cancelLabel`, `title`,
+`body`, ...) rather than reaching into any particular i18n system — the
+GateOpen/bagStore originals called a local `t()` helper directly, which this
+version deliberately doesn't replicate.
+
+Sizing constants (padding, font sizes) are GateOpen's as-ported; the other
+three projects' copies had drifted from GateOpen's by a pixel or two here and
+there before this existed — if that drift turns out to matter to a specific
+consumer, add a variant, don't re-fork the file.
+
 More projects' reusable pieces land here over time, each in its own
 subpath/export as they're extracted — this file's job is to stay accurate
 to what's actually here, not to promise a shape in advance.

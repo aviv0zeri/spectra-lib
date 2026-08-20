@@ -1,8 +1,8 @@
 {
   "name": "spectra-lib",
-  "version": "0.5.0",
+  "version": "0.6.0",
   "private": true,
-  "description": "Aviv's personal shared library -- reusable components/tokens/utilities that span more than one project. Currently: GateOpen's design tokens, a cn() helper, a findUp() build-config utility, and cv/portfolio's shared chrome.css/dom.js.",
+  "description": "Aviv's personal shared library -- reusable components/tokens/utilities that span more than one project. Currently: GateOpen's design tokens, a cn() helper, a findUp() build-config utility, cv/portfolio's shared chrome.css/dom.js, and a Radix-based dashboard UI component set shared by GateOpen/bagStore/SpectraHub/Raptor2.",
   "type": "module",
   "main": "dist/tokens.js",
   "types": "dist/tokens.d.ts",
@@ -18,6 +18,10 @@
     "./node-utils": {
       "types": "./dist/node-utils.d.ts",
       "default": "./dist/node-utils.js"
+    },
+    "./ui": {
+      "types": "./dist/ui/index.d.ts",
+      "default": "./dist/ui/index.js"
     }
   },
   "files": [
@@ -29,12 +33,24 @@
     "prepare": "npm run build"
   },
   "peerDependencies": {
+    "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
+    "lucide-react": "^1.25.0",
+    "radix-ui": "^1.6.2",
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0",
     "tailwind-merge": "^3.6.0"
   },
   "devDependencies": {
     "@types/node": "^22.10.2",
+    "@types/react": "^19.1.0",
+    "@types/react-dom": "^19.1.0",
+    "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
+    "lucide-react": "^1.25.0",
+    "radix-ui": "^1.6.2",
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0",
     "tailwind-merge": "^3.6.0",
     "typescript": "^5.9.3"
   },
