@@ -39,6 +39,7 @@ import { cn } from '../cn.js';
  *   icon?: import('react').ComponentType<{ size?: number, className?: string }>,
  *   label: string,
  *   active?: boolean,
+ *   alert?: boolean,
  *   onClick?: () => void,
  *   as?: import('react').ElementType,
  *   subItems?: SidebarNavItem[],
@@ -61,6 +62,20 @@ const NAV_LABEL_COLLAPSED = 'max-w-0 opacity-0';
 /** @param {SidebarNavItem} item */
 function hasSubItems(item) {
   return Array.isArray(item.subItems) && item.subItems.length > 0;
+}
+
+/** A small dot pinned to an icon's corner, same shape regardless of rail
+ * collapse state -- decorative only (the row's own label/title already
+ * carries the accessible name), so it's aria-hidden. The ring matches the
+ * rail's own surface rather than being transparent, so it reads as a badge
+ * sitting ON the icon instead of a dot that happens to overlap it. */
+function AlertDot() {
+  return (
+    <span
+      className="absolute -end-0.5 -top-0.5 block size-2 rounded-full bg-destructive ring-2 ring-[var(--panel)]"
+      aria-hidden="true"
+    />
+  );
 }
 
 /**
@@ -243,7 +258,7 @@ export function Sidebar({
 
   /** @param {SidebarNavItem} item, @param {boolean} sub */
   function renderRow(item, sub) {
-    const { id, icon: Icon, label, active, onClick, as, subItems, ...rest } = item;
+    const { id, icon: Icon, label, active, alert, onClick, as, subItems, ...rest } = item;
     return (
       <Interactive
         key={id}
@@ -258,7 +273,12 @@ export function Sidebar({
         label={label}
         rest={rest}
       >
-        {Icon ? <Icon size={sub ? 15 : 17} className="shrink-0" /> : null}
+        {Icon ? (
+          <span className="relative inline-flex shrink-0">
+            <Icon size={sub ? 15 : 17} className="shrink-0" />
+            {alert ? <AlertDot /> : null}
+          </span>
+        ) : null}
         <span
           className={cn(
             NAV_LABEL_BASE,
@@ -319,6 +339,10 @@ export function Sidebar({
           const groupOpen = Boolean(expandedGroups[item.id]);
           const subItems = item.subItems ?? [];
           const groupActive = subItems.some((s) => s.active);
+          // A closed group hides its subItems entirely, so an alert inside
+          // one would otherwise be invisible until the operator happens to
+          // open the group -- surface it on the group's own icon too.
+          const groupAlert = Boolean(item.alert) || subItems.some((s) => s.alert);
           // Closing: drop to {} (nothing open). Opening: replace the whole
           // state with just this group, so whatever else was open closes.
           const toggle = () =>
@@ -343,7 +367,12 @@ export function Sidebar({
                   aria-label={item.label}
                   title={item.label}
                 >
-                  {GroupIcon ? <GroupIcon size={17} className="shrink-0" /> : null}
+                  {GroupIcon ? (
+                    <span className="relative inline-flex shrink-0">
+                      <GroupIcon size={17} className="shrink-0" />
+                      {groupAlert ? <AlertDot /> : null}
+                    </span>
+                  ) : null}
                   <span
                     className={cn(
                       NAV_LABEL_BASE,
