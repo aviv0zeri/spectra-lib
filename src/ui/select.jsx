@@ -108,6 +108,12 @@ function SelectItem({ className, children, ...props }) {
         'hover:bg-[color-mix(in_srgb,var(--accent)_22%,transparent)] hover:text-foreground',
         'data-[highlighted]:bg-[color-mix(in_srgb,var(--accent)_28%,transparent)] data-[highlighted]:text-foreground',
         'focus:bg-[color-mix(in_srgb,var(--accent)_28%,transparent)] focus:text-foreground',
+        // The currently-selected item gets its own fixed blue, independent of
+        // --accent: --accent is per-project (Raptor2's is a neutral chrome
+        // gray, not blue), so a project with a non-blue accent would render
+        // an invisible-looking "selected" state if this reused that token.
+        // A literal Tailwind blue reads as "selected" consistently everywhere.
+        'data-[state=checked]:bg-blue-500/15 data-[state=checked]:text-blue-600 dark:data-[state=checked]:text-blue-400',
         "data-[disabled]:pointer-events-none data-[disabled]:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4 [&_svg:not([class*='text-'])]:text-muted-foreground *:[span]:last:flex *:[span]:last:items-center *:[span]:last:gap-2",
         className,
       )}
@@ -118,7 +124,7 @@ function SelectItem({ className, children, ...props }) {
         className="absolute end-2 flex size-3.5 items-center justify-center"
       >
         <SelectPrimitive.ItemIndicator>
-          <CheckIcon className="size-4" />
+          <CheckIcon className="size-4 text-blue-600 dark:text-blue-400" />
         </SelectPrimitive.ItemIndicator>
       </span>
       <SelectPrimitive.ItemText>{children}</SelectPrimitive.ItemText>
