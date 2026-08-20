@@ -28,8 +28,10 @@ export { default as EmptyComingSoon } from './empty-coming-soon.js';
 export { Input } from './input.js';
 export { Label } from './label.js';
 export { KebabMenu, KebabMenuItem } from './menu.js';
+export { LinkedHubCard } from './linked-hub-card.js';
 export { NestedSidebar, NestedSidebarItem } from './nested-sidebar.js';
 export { PageShell, PageHeader, PageGrid, PageEmpty, PageMessage } from './page-shell.js';
+export { ProfileAvatar } from './profile-avatar.js';
 export {
   Select,
   SelectContent,
