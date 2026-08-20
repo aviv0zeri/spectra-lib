@@ -41,10 +41,20 @@ const buttonVariants = cva(
         'icon-sm': 'size-8',
         'icon-lg': 'size-10',
       },
+      // Additive: every existing call site omits `shape`, defaults to
+      // 'default' (rounded-md, unchanged), so this changes nothing for
+      // anyone not opting in. 'round' is for icon-only buttons that should
+      // read as a circular control (a header action, an avatar-adjacent
+      // icon) rather than the standard rounded-rect button shape.
+      shape: {
+        default: '',
+        round: 'rounded-full',
+      },
     },
     defaultVariants: {
       variant: 'default',
       size: 'default',
+      shape: 'default',
     },
   },
 );
@@ -52,7 +62,14 @@ const buttonVariants = cva(
 /**
  * @param {React.ComponentProps<'button'> & ButtonVariants & { asChild?: boolean }} props
  */
-function Button({ className, variant = 'default', size = 'default', asChild = false, ...props }) {
+function Button({
+  className,
+  variant = 'default',
+  size = 'default',
+  shape = 'default',
+  asChild = false,
+  ...props
+}) {
   const Comp = asChild ? Slot.Root : 'button';
 
   return (
@@ -60,7 +77,7 @@ function Button({ className, variant = 'default', size = 'default', asChild = fa
       data-slot="button"
       data-variant={variant}
       data-size={size}
-      className={cn(buttonVariants({ variant, size, className }))}
+      className={cn(buttonVariants({ variant, size, shape, className }))}
       {...props}
     />
   );
