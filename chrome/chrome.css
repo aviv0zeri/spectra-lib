@@ -1,0 +1,649 @@
+/* ===========================================================================
+   spectra-lib chrome — the foundation cv and portfolio share on purpose:
+   tokens, aurora, glass, topbar, and the nav rail (a port of GateOpen
+   Dashboard's Sidebar.jsx to plain CSS). Extracted 2026-08-20 after this had
+   been hand-copied between the two sites and already started drifting --
+   .tool.icon and the .doc max-width rule below existed in portfolio.css but
+   had never been copied back to cv.css. Both are included here now.
+
+   Each site's own stylesheet loads AFTER this one and owns everything this
+   file doesn't: hero copy/sizing, --doc-w (a sensible default is set below;
+   override it on your own :root after this file loads), and of course all
+   page-specific content (CV sections/entries, the portfolio gallery, etc).
+
+   No build step, on purpose -- matches the "open index.html in a browser"
+   philosophy both sites are built around. Each site's own sync-chrome.mjs
+   copies this file (and dom.js) in from spectra-lib's local checkout; run it
+   after pulling a spectra-lib change, commit the result like any other asset.
+   =========================================================================== */
+
+/* ---------- tokens ------------------------------------------------------- */
+
+:root {
+  --bg:        #f1f2f4;
+  --ink:       #16181d;
+  --soft:      #464a54;
+  --mute:      #7b808c;
+  --surface:   #ffffff;
+
+  --glass:     rgba(255, 255, 255, .58);
+  --glass-2:   rgba(255, 255, 255, .42);
+  --line:      rgba(15, 19, 32, .11);
+  --line-soft: rgba(15, 19, 32, .07);
+  --sheen:     rgba(255, 255, 255, .75);
+
+  /* Graphite page, ONE cool accent. a1 is the only colour that carries meaning
+     (section numbers, links, the active row); a2 is a single step of it, and
+     a3/a4 are neutral greys that exist purely to give the background field
+     some depth. Adding a second meaningful hue is what made this a rainbow. */
+  --a1: #35618f;   /* steel blue — the accent */
+  --a2: #4a7099;   /* one step of it          */
+  --a3: #6c717c;   /* neutral                 */
+  --a4: #8d919b;   /* neutral, lighter        */
+  --claude: #35618f;
+
+  --glow-1: rgba(53, 97, 143, .22);
+  --glow-2: rgba(53, 97, 143, .16);
+  --shadow: 0 20px 60px -28px rgba(15, 19, 32, .45);
+
+  --blob-o: .40;
+  --grain-o: .04;
+
+  --display: "Sora", system-ui, sans-serif;
+  --body:    "Inter", system-ui, -apple-system, sans-serif;
+  --mono:    "JetBrains Mono", ui-monospace, Menlo, monospace;
+
+  --gutter: clamp(14px, 3.5vw, 30px);
+  --rail-w: 304px;
+  /* A default, not a shared value -- cv wants 860px (a document), portfolio
+     wants 960px (a gallery grid). Override on your own :root after this file
+     loads; it's genuinely a per-site choice, not drift. */
+  --doc-w:  900px;
+}
+
+/* Hebrew swaps the families; everything else is identical. */
+:root:lang(he), [dir="rtl"] {
+  --display: "Rubik", "Heebo", system-ui, sans-serif;
+  --body:    "Heebo", system-ui, sans-serif;
+}
+
+/* The dark palette. Applied automatically from the OS/browser preference —
+   no manual toggle, no stored override; the two can never drift apart
+   because there is only one place this is defined. */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg:        #0a0b0e;
+    --ink:       #eceef2;
+    --soft:      #a8adb8;
+    --mute:      #767c88;
+    --surface:   #14161b;
+
+    --glass:     rgba(20, 25, 42, .58);
+    --glass-2:   rgba(20, 25, 42, .40);
+    --line:      rgba(238, 241, 248, .13);
+    --line-soft: rgba(238, 241, 248, .08);
+    --sheen:     rgba(255, 255, 255, .10);
+
+    --a1: #7fb0e0;
+    --a2: #6f9cc9;
+    --a3: #545a66;
+    --a4: #666d7a;
+    --claude: #7fb0e0;
+
+    --glow-1: rgba(127, 176, 224, .26);
+    --glow-2: rgba(127, 176, 224, .18);
+    --shadow: 0 24px 70px -30px rgba(0, 0, 0, .85);
+
+    --blob-o: .46;
+    --grain-o: .06;
+  }
+}
+
+/* ---------- base --------------------------------------------------------- */
+
+* { box-sizing: border-box; }
+
+html { -webkit-text-size-adjust: 100%; }
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  color: var(--ink);
+  background: var(--bg);
+  font-family: var(--body);
+  font-size: 16px;
+  line-height: 1.6;
+  overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+}
+
+.skip {
+  position: absolute; inset-inline-start: -9999px;
+  z-index: 200; padding: 10px 16px;
+  background: var(--ink); color: var(--bg);
+}
+.skip:focus { inset-inline-start: 12px; top: 12px; }
+
+:focus-visible { outline: 2px solid var(--a1); outline-offset: 3px; border-radius: 4px; }
+
+/* ---------- aurora ------------------------------------------------------- */
+
+/* Two composited layers of soft radial gradients, drifting on transforms only.
+   The obvious implementation — four big DOM circles under filter: blur(78px),
+   each animated and will-change:transform — looked identical and cost far too
+   much: with the glass surfaces layered over it the compositor gave up and
+   painted blank tiles as soon as the page scrolled (reproduced, not theorised).
+   Gradients are already soft, so no blur filter is needed, and animating whole
+   layers with translate3d/rotate keeps this to two GPU layers with no repaint. */
+.aurora {
+  position: fixed; inset: 0; z-index: -1;
+  pointer-events: none; overflow: hidden;
+  opacity: var(--blob-o);
+  contain: strict;
+}
+
+.blob { position: absolute; inset: -25%; display: block; }
+
+.b1 {
+  background-image:
+    radial-gradient(ellipse 46% 42% at 16% 10%, var(--a1), transparent 68%),
+    radial-gradient(ellipse 40% 36% at 88% 6%,  var(--a2), transparent 66%);
+  animation: drift1 44s ease-in-out infinite;
+}
+.b2 {
+  background-image:
+    radial-gradient(ellipse 44% 40% at 10% 88%, var(--a4), transparent 68%),
+    radial-gradient(ellipse 46% 38% at 92% 82%, var(--a3), transparent 66%);
+  animation: drift2 57s ease-in-out infinite;
+}
+.b3 {
+  background-image:
+    radial-gradient(ellipse 38% 34% at 62% 46%, var(--a2), transparent 70%),
+    radial-gradient(ellipse 34% 40% at 30% 62%, var(--a1), transparent 70%);
+  opacity: .75;
+  animation: drift3 68s ease-in-out infinite;
+}
+.b4 { display: none; }   /* three layers already carry all four hues */
+
+@keyframes drift3 {
+  0%, 100% { transform: translate3d(0, 0, 0) scale(1.04); }
+  50%      { transform: translate3d(5%, -4%, 0) scale(.94); }
+}
+
+@keyframes drift1 {
+  0%, 100% { transform: translate3d(0, 0, 0) scale(1); }
+  50%      { transform: translate3d(4%, 3%, 0) scale(1.12); }
+}
+@keyframes drift2 {
+  0%, 100% { transform: translate3d(0, 0, 0) scale(1.06) rotate(0deg); }
+  50%      { transform: translate3d(-4%, -3%, 0) scale(1) rotate(6deg); }
+}
+
+/* Fine tooth of noise so the big gradients don't band on wide screens. */
+.grain {
+  position: absolute; inset: 0;
+  opacity: var(--grain-o);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+/* ---------- glass -------------------------------------------------------- */
+
+.glass {
+  background: var(--glass);
+  backdrop-filter: blur(24px) saturate(170%);
+  -webkit-backdrop-filter: blur(24px) saturate(170%);
+  border: 1px solid var(--line);
+  box-shadow: inset 0 1px 0 var(--sheen), var(--shadow);
+}
+
+/* The same graceful degradation the native component makes: where the material
+   cannot be rendered, or the reader has asked for less transparency, fall back
+   to the plain solid surface rather than a washed-out approximation. */
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .glass { background: var(--surface); }
+}
+@media (prefers-reduced-transparency: reduce) {
+  .glass {
+    background: var(--surface);
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+  }
+}
+
+/* ---------- top bar ------------------------------------------------------ */
+
+.topbar {
+  position: sticky; top: 0; z-index: 50;
+  display: flex; align-items: center; gap: 14px; flex-wrap: wrap;
+  padding: 10px clamp(12px, 3vw, 26px);
+  border-width: 0 0 1px;
+  border-radius: 0;
+}
+
+.home {
+  display: inline-flex; align-items: center; gap: 8px;
+  font: 600 13px/1 var(--mono);
+  color: var(--mute); text-decoration: none;
+  padding: 8px 4px;
+  transition: color .2s ease;
+}
+.home:hover { color: var(--ink); }
+.home .arrow { transition: transform .2s ease; }
+.home:hover .arrow { transform: translateX(-3px); }
+[dir="rtl"] .home .arrow { transform: scaleX(-1); }
+[dir="rtl"] .home:hover .arrow { transform: scaleX(-1) translateX(-3px); }
+
+.tools {
+  display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+  margin-inline-start: auto;
+}
+
+.tool {
+  font: 600 13px/1 var(--body);
+  padding: 9px 14px;
+  color: var(--ink);
+  background: var(--glass-2);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  cursor: pointer;
+  transition: transform .16s ease, box-shadow .16s ease, background .16s ease, color .16s ease;
+}
+a.tool { text-decoration: none; }
+.tool:hover {
+  transform: translateY(-1px);
+  background: var(--surface);
+  box-shadow: 0 6px 18px -8px var(--glow-1);
+}
+.tool:active { transform: translateY(0); }
+.tool.icon { padding: 9px 11px; font-size: 15px; line-height: 1; }
+.tool.danger { color: var(--claude); border-color: color-mix(in srgb, var(--claude) 40%, transparent); }
+.tool.accent {
+  color: #fff;
+  background: var(--a1);
+  border-color: transparent;
+}
+.tool.accent:hover { background: var(--a2); }
+.tool[aria-pressed="true"] {
+  color: #fff;
+  background: var(--a1);
+  border-color: transparent;
+}
+.tool.ok { color: #fff; background: var(--a1); border-color: transparent; }
+
+.seg {
+  display: inline-flex;
+  padding: 3px;
+  background: var(--glass-2);
+  border: 1px solid var(--line);
+  border-radius: 11px;
+}
+.segbtn {
+  font: 600 12px/1 var(--body);
+  padding: 7px 11px;
+  color: var(--mute);
+  background: none; border: 0; border-radius: 8px;
+  cursor: pointer;
+  transition: color .18s ease, background .18s ease;
+}
+.segbtn:hover { color: var(--ink); }
+.segbtn.is-on {
+  color: #fff;
+  background: var(--a1);
+}
+
+.menu-wrap { position: relative; }
+.menu {
+  position: absolute; inset-inline-end: 0; top: calc(100% + 8px);
+  z-index: 60;
+  width: 260px;
+  padding: 6px;
+  border-radius: 14px;
+  animation: pop .18s cubic-bezier(.2, .8, .3, 1);
+}
+.menu[hidden] { display: none; }
+.menu button {
+  display: block; width: 100%;
+  text-align: start;
+  padding: 10px 12px;
+  background: none; border: 0; border-radius: 10px;
+  color: var(--ink); cursor: pointer;
+  font-family: var(--body);
+  transition: background .15s ease;
+}
+.menu button:hover { background: var(--glass-2); }
+.menu button strong { display: block; font-size: 13.5px; font-weight: 600; }
+.menu button span { display: block; font-size: 12px; color: var(--mute); margin-top: 2px; line-height: 1.4; }
+
+@keyframes pop { from { opacity: 0; transform: translateY(-6px) scale(.98); } }
+
+body:not(.editing) .hide-unless-editing { display: none; }
+body:not(.has-draft) .hide-unless-draft { display: none; }
+
+.draftbar {
+  position: sticky; top: 56px; z-index: 40;
+  display: flex; align-items: center; gap: 10px;
+  padding: 9px clamp(12px, 3vw, 26px);
+  font-size: 13px;
+  color: var(--ink);
+  background: color-mix(in srgb, var(--a3) 20%, var(--glass));
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  border-bottom: 1px solid var(--line);
+}
+.draftbar[hidden] { display: none; }
+.draftbar .dot {
+  width: 8px; height: 8px; flex: none; border-radius: 50%;
+  background: var(--a3);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--a3) 25%, transparent);
+  animation: pulse 2.4s ease-in-out infinite;
+}
+@keyframes pulse { 50% { box-shadow: 0 0 0 8px color-mix(in srgb, var(--a3) 8%, transparent); } }
+
+/* ---------- shell -------------------------------------------------------- */
+
+.shell {
+  display: grid;
+  gap: clamp(18px, 3vw, 34px);
+  max-width: calc(var(--rail-w) + var(--doc-w) + 100px);
+  margin: 0 auto;
+  padding: clamp(20px, 4vw, 46px) var(--gutter) 40px;
+}
+
+@media (min-width: 1000px) {
+  /* The rail FLOATS and stays pinned to the viewport — it does not scroll away
+     with the document, the way the Dashboard's rail never scrolls away either.
+     That means taking it out of the grid entirely (fixed elements can't be
+     grid items in any useful sense) and reserving its width as padding on the
+     shell instead, so the document still starts clear of it.
+     `sticky` was the wrong tool: it pins only until its containing block
+     scrolls past, so a long CV eventually pushed it off screen. */
+  .shell {
+    display: block;
+    /* gutter + rail + gap. The gutter term is the bug fix: the rail starts at
+       the shell's inner edge, not at the shell's border box, so leaving it out
+       left ~4px of clearance and the heading collided with the rail. */
+    padding-inline-start: calc(var(--gutter) + var(--rail-w) + 36px);
+    transition: padding-inline-start 120ms ease-out;
+  }
+  body.rail-collapsed .shell { padding-inline-start: calc(var(--gutter) + 64px + 36px); }
+
+  .rail {
+    position: fixed;
+    top: 88px;
+    z-index: 30;
+    /* Same centring maths as the shell's own max-width + auto margins, so the
+       rail lands exactly on the shell's start edge rather than floating at an
+       arbitrary offset from the window. */
+    inset-inline-start: max(
+      calc((100vw - (var(--rail-w) + var(--doc-w) + 100px)) / 2 + var(--gutter)),
+      var(--gutter)
+    );
+
+    /* Centre the document in whatever space is left, rather than letting it
+       hug the rail on wide screens. */
+    /* A rail taller than the viewport scrolls inside itself; it must never be
+       the reason the page grows a second scrollbar. */
+    max-height: calc(100vh - 112px);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
+
+  .doc { max-width: var(--doc-w); margin-inline: auto; }
+}
+
+/* ---------- nav rail ------------------------------------------------------
+   A port of the GateOpen Dashboard's sidebar (Sidebar.jsx) to plain CSS: the
+   same three fixed zones (toggle row, scrolling item list, pinned profile
+   foot), the same collapse behaviour and persistence, the same row treatment —
+   soft-fill pills with no borders, a faint neutral wash on hover and an
+   accent-tinted pill with an inset hairline ring when active — and the same
+   nested "disclosure group" recessed panel. Width is the only transitioning
+   property, for the reason the original documents: animating width alongside
+   min/max-width makes the other two snap while width tries to ease.
+   -------------------------------------------------------------------------- */
+
+/* No `position` here on purpose. The desktop rule above makes the rail
+   `fixed`, and media queries add NO specificity — a bare `.rail { position:
+   relative }` further down the file would silently win on source order and
+   quietly undo the pinning. Nothing inside needs a positioned ancestor here:
+   the hover name label anchors to .avatar-wrap, which has its own relative. */
+.rail {
+  display: flex; flex-direction: column;
+  box-sizing: border-box;
+  width: var(--rail-w);
+  padding: 10px;
+  border-radius: 18px;
+  user-select: none;
+  overflow: hidden;
+  transition: width 120ms ease-out;
+}
+.rail.collapsed { width: 64px; padding: 10px 8px; }
+
+/* Phone and tablet: the rail is a full-width panel BELOW the CV, not a column
+   beside it — and not above it either, which would spend the whole first
+   screen on a note about the page instead of on the person. Collapsing a
+   full-width panel by width is meaningless, so the toggle goes away too. */
+@media (max-width: 999px) {
+  .rail, .rail.collapsed { width: 100%; padding: 14px; order: 2; }
+  .rail .rail-top { display: none; }
+  .rail.collapsed .nav-label { max-width: 170px; opacity: 1; }
+  .rail.collapsed .nav-row { justify-content: flex-start; padding-inline: 12px; }
+  .rail.collapsed .nav-panel { display: block; }
+  .rail.collapsed .rail-foot { justify-content: flex-start; padding-inline-start: 4px; }
+  .doc { order: 1; }
+}
+
+.rail-top { flex: none; display: flex; align-items: center; justify-content: flex-start; padding-bottom: 4px; }
+
+.icon-btn {
+  display: flex; align-items: center; justify-content: center;
+  flex: none;
+  width: 32px; height: 32px;
+  border: 0; border-radius: 9px;
+  background: transparent;
+  color: var(--mute);
+  cursor: pointer;
+  transition: background .15s ease, color .15s ease;
+}
+.icon-btn:hover { background: color-mix(in srgb, var(--ink) 8%, transparent); color: var(--ink); }
+.icon-btn svg { width: 16px; height: 16px; }
+
+.rail-list { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; gap: 4px; overflow: hidden auto; }
+
+.nav-row {
+  width: 100%; min-width: 0;
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px 12px;
+  border: 0; border-radius: 12px;
+  background: transparent;
+  color: var(--ink);
+  font: 500 14.5px/1.35 var(--body);
+  text-align: start;
+  white-space: nowrap; overflow: hidden;
+  cursor: pointer;
+  transition: background .15s ease, color .15s ease;
+}
+.nav-row:hover { background: color-mix(in srgb, var(--ink) 8%, transparent); }
+.nav-row.is-active {
+  background: color-mix(in srgb, var(--a1) 17%, transparent);
+  color: var(--a1);
+  font-weight: 600;
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--a1) 30%, transparent);
+}
+.nav-row.is-active:hover { background: color-mix(in srgb, var(--a1) 23%, transparent); }
+.nav-row svg { width: 17px; height: 17px; flex: none; }
+.rail.collapsed .nav-row { justify-content: center; padding-inline: 0; }
+
+.nav-label {
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  max-width: 170px; opacity: 1;
+  transition: max-width 120ms ease-out, opacity 120ms ease-out;
+}
+.rail.collapsed .nav-label { max-width: 0; opacity: 0; }
+
+/* The disclosure group's recessed panel — a shade deeper than the rail's own
+   fill, so nested content reads as one surface rather than floating rows. */
+.nav-panel {
+  margin-top: 4px;
+  padding: 12px;
+  border-radius: 13px;
+  background: color-mix(in srgb, var(--ink) 5%, transparent);
+  box-shadow: inset 0 1px 3px color-mix(in srgb, var(--ink) 11%, transparent);
+}
+.rail.collapsed .nav-panel { display: none; }
+
+.nav-panel h3 {
+  font: 600 13.5px/1.35 var(--display);
+  margin: 0 0 5px;
+  color: var(--a1);
+}
+.nav-panel p { font-size: 12.8px; line-height: 1.6; color: var(--soft); margin: 0; }
+.nav-panel .about-item + .about-item { margin-top: 13px; padding-top: 13px; border-top: 1px solid var(--line-soft); }
+
+.rail .chip-row { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 12px; }
+.rail .chip {
+  font: 500 10.5px/1 var(--mono);
+  padding: 5px 8px;
+  border-radius: 6px;
+  color: var(--mute);
+  background: color-mix(in srgb, var(--ink) 5%, transparent);
+}
+
+.rail-foot {
+  flex: none;
+  display: flex; align-items: center;
+  margin-top: 6px; padding-top: 9px;
+  border-top: 1px solid var(--line-soft);
+}
+.rail.collapsed .rail-foot { justify-content: center; }
+.rail:not(.collapsed) .rail-foot { padding-inline-start: 4px; }
+
+.avatar.is-guest { background: color-mix(in srgb, var(--ink) 10%, transparent); color: var(--soft); box-shadow: none; }
+.avatar.is-guest svg { width: 17px; height: 17px; }
+
+.avatar-wrap { position: relative; display: inline-flex; align-items: center; }
+.avatar {
+  width: 32px; height: 32px;
+  display: grid; place-items: center;
+  border-radius: 50%;
+  font: 600 11.5px/1 var(--mono);
+  letter-spacing: .04em;
+  color: #fff;
+  background: var(--a1);
+}
+/* Positioned off the avatar's box so it can overlay (and spill past) the rail
+   without ever affecting the rail's width — same trick as the original. */
+.avatar-name {
+  position: absolute; top: 50%; inset-inline-start: 100%; z-index: 10;
+  margin-inline-start: 8px;
+  transform: translateY(-50%) translateX(-6px);
+  padding: 6px 10px;
+  border-radius: 9px;
+  white-space: nowrap;
+  font: 500 12.5px/1 var(--body);
+  color: var(--ink);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  box-shadow: var(--shadow);
+  opacity: 0; pointer-events: none;
+  transition: opacity .15s ease, transform .15s ease;
+}
+[dir="rtl"] .avatar-name { transform: translateY(-50%) translateX(6px); }
+.avatar-wrap:hover .avatar-name { opacity: 1; transform: translateY(-50%) translateX(0); }
+
+
+/* ---------- footer (base) ------------------------------------------------ */
+
+.pagefoot {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 14px; flex-wrap: wrap;
+  margin: 0 clamp(14px, 3.5vw, 30px) clamp(16px, 3vw, 30px);
+  padding: 16px clamp(16px, 3vw, 24px);
+  border-radius: 16px;
+  font: 400 12.5px/1.6 var(--mono);
+  color: var(--mute);
+}
+
+/* ---------- footer clearance ---------------------------------------------
+   The rail is fixed, so it stays on screen when you reach the bottom of the
+   document. A full-width footer therefore runs underneath it — invisible while
+   the rail is short, an actual collision once it is expanded and tall. Give
+   the footer the same inline clearance the shell gets.
+   -------------------------------------------------------------------------- */
+@media (min-width: 1000px) {
+  .pagefoot { margin-inline-start: calc(var(--gutter) + var(--rail-w) + 36px); }
+  body.rail-collapsed .pagefoot { margin-inline-start: calc(var(--gutter) + 64px + 36px); }
+}
+
+/* ---------- motion preferences (base) ------------------------------------- */
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation: none !important;
+    transition: none !important;
+  }
+}
+
+/* ===========================================================================
+   MOBILE / TABLET — authoritative overrides.
+
+   These live at the END of the file on purpose. Media queries add NO
+   specificity, so an earlier `@media (max-width: 999px)` block loses on source
+   order to any later bare `.rail.collapsed …` rule. That is exactly what
+   happened: the rail's collapsed state persists in localStorage, so opening the
+   page on a phone after collapsing it on a desktop produced a dead stub — panel
+   display:none, labels max-width:0 — with the collapse toggle hidden and no way
+   to reopen it. Same trap that silently undid the rail's fixed positioning.
+
+   Rule: on narrow screens the rail is ALWAYS expanded. Collapsing is a
+   desktop-only affordance for reclaiming horizontal space; there is no
+   horizontal space to reclaim here, and a persisted desktop preference must
+   never be able to hide content on a phone.
+   =========================================================================== */
+
+@media (max-width: 999px) {
+  .shell,
+  body.rail-collapsed .shell { display: flex; flex-direction: column; padding-inline-start: var(--gutter); }
+
+  .doc  { order: 1; max-width: none; margin-inline: 0; }
+  .rail { order: 2; }
+
+  .rail,
+  .rail.collapsed {
+    position: static;
+    width: 100%;
+    max-height: none;
+    overflow: visible;
+    padding: 14px;
+  }
+
+  /* The collapse control has no job here, and leaving it would let someone
+     collapse a full-width panel into an unusable stub. */
+  .rail .rail-top { display: none; }
+
+  .rail.collapsed .nav-row    { justify-content: flex-start; padding-inline: 12px; }
+  .rail.collapsed .nav-label  { max-width: none; opacity: 1; }
+  .rail.collapsed .nav-panel  { display: block; }
+  .rail.collapsed .rail-foot  { justify-content: flex-start; padding-inline-start: 4px; }
+
+  .pagefoot,
+  body.rail-collapsed .pagefoot { margin-inline-start: var(--gutter); }
+
+  /* Landscape phones: wide enough to look like a tablet, far too short for a
+     tall hero. Tighten the vertical rhythm rather than letting the first
+     screenful be nothing but a name. */
+  @media (orientation: landscape) and (max-height: 500px) {
+    .hero      { margin-bottom: 18px; }
+    .hero h1   { font-size: clamp(28px, 6vh, 40px); }
+    .topbar    { padding-block: 6px; }
+    .shell     { padding-block: 16px 24px; }
+  }
+}
+
+/* Touch targets: 44px is the smallest reliably hittable control. The toolbar
+   buttons were sized for a mouse. */
+@media (pointer: coarse) {
+  .tool, .segbtn { min-height: 44px; display: inline-flex; align-items: center; }
+  .nav-row       { min-height: 44px; }
+  .mini          { min-height: 36px; }
+}
