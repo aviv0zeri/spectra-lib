@@ -105,19 +105,29 @@ function Interactive({ as: Comp, className, onClick, active, label, children, re
 /**
  * @param {{
  *   items: SidebarNavItem[],
- *   collapsedStorageKey: string,
+ *   collapsedStorageKey?: string,
+ *   isCollapsed?: boolean,
+ *   onToggleCollapse?: () => void,
  *   transitionMs?: number,
  *   isRtl?: boolean,
  *   ariaLabel?: string,
  *   collapseLabel?: string,
  *   expandLabel?: string,
  *   groupExpandLabel?: (item: SidebarNavItem, open: boolean) => string,
+ *   brand?: import('react').ReactNode,
  *   footer?: {
  *     icon: import('react').ReactNode,
  *     tooltip: string,
  *     active?: boolean,
  *     onClick?: () => void,
  *     as?: import('react').ElementType,
+ *     secondary?: {
+ *       icon: import('react').ReactNode,
+ *       tooltip: string,
+ *       onClick?: () => void,
+ *       as?: import('react').ElementType,
+ *       [extraProp: string]: any,
+ *     },
  *     [extraProp: string]: any,
  *   },
  * }} props
@@ -125,21 +135,33 @@ function Interactive({ as: Comp, className, onClick, active, label, children, re
 export function Sidebar({
   items,
   collapsedStorageKey,
+  isCollapsed: isCollapsedProp,
+  onToggleCollapse,
   transitionMs = 0,
   isRtl = false,
   ariaLabel = 'Primary',
   collapseLabel = 'Collapse sidebar',
   expandLabel = 'Expand sidebar',
   groupExpandLabel,
+  brand,
   footer,
 }) {
-  const [navCollapsed, setNavCollapsed] = useState(() => {
+  // Collapse state is externally controlled when the caller passes both
+  // isCollapsed and onToggleCollapse (e.g. a shell that already owns this
+  // state itself, or persists it under a key this component doesn't know
+  // about) -- internal state/localStorage below is the default for callers
+  // that don't need that, and collapsedStorageKey is only read in that path.
+  const externallyControlled = isCollapsedProp !== undefined && onToggleCollapse !== undefined;
+
+  const [internalCollapsed, setInternalCollapsed] = useState(() => {
+    if (externallyControlled || !collapsedStorageKey) return false;
     try {
       return window.localStorage.getItem(collapsedStorageKey) === '1';
     } catch {
       return false;
     }
   });
+  const navCollapsed = externallyControlled ? isCollapsedProp : internalCollapsed;
 
   const [transitioning, setTransitioning] = useState(false);
   const transitionTimerRef = useRef(/** @type {number | null} */ (null));
@@ -151,15 +173,21 @@ export function Sidebar({
   );
 
   function toggleNavCollapsed() {
-    setNavCollapsed((v) => {
-      const next = !v;
-      try {
-        window.localStorage.setItem(collapsedStorageKey, next ? '1' : '0');
-      } catch {
-        // localStorage throws in Safari private browsing / storage-disabled contexts
-      }
-      return next;
-    });
+    if (externallyControlled) {
+      onToggleCollapse();
+    } else {
+      setInternalCollapsed((v) => {
+        const next = !v;
+        try {
+          if (collapsedStorageKey) {
+            window.localStorage.setItem(collapsedStorageKey, next ? '1' : '0');
+          }
+        } catch {
+          // localStorage throws in Safari private browsing / storage-disabled contexts
+        }
+        return next;
+      });
+    }
     if (transitionMs > 0) {
       setTransitioning(true);
       if (transitionTimerRef.current) window.clearTimeout(transitionTimerRef.current);
@@ -256,7 +284,7 @@ export function Sidebar({
       aria-label={ariaLabel}
       aria-busy={transitionMs > 0 ? transitioning : undefined}
     >
-      <div className="flex-none flex items-center justify-start pb-1">
+      <div className="flex-none flex items-center justify-start gap-2 pb-1">
         <button
           type="button"
           className={cn(NAV_ICON_BTN, 'w-8 h-8')}
@@ -270,6 +298,15 @@ export function Sidebar({
             <RailCollapseIcon size={16} aria-hidden="true" />
           )}
         </button>
+        {brand ? (
+          <div
+            className={cn(NAV_LABEL_BASE, labelTransitionClass)}
+            style={navCollapsed ? { maxWidth: 0, opacity: 0 } : { maxWidth: 160, opacity: 1 }}
+            aria-hidden={navCollapsed || undefined}
+          >
+            {brand}
+          </div>
+        ) : null}
       </div>
 
       <div
@@ -356,7 +393,16 @@ export function Sidebar({
           className={cn(
             'flex-none flex items-center pt-2 mt-1',
             'border-t border-[color-mix(in_srgb,var(--border)_55%,transparent)]',
-            navCollapsed ? 'justify-center' : 'ps-1',
+            // A second footer action needs room to sit apart from the first
+            // (a row with a spacer when expanded, stacked when there's no
+            // width to spare) -- a single action just centers/leans start.
+            footer.secondary
+              ? navCollapsed
+                ? 'flex-col justify-center gap-1.5'
+                : 'gap-2 ps-1'
+              : navCollapsed
+                ? 'justify-center'
+                : 'ps-1',
           )}
           inert={(transitionMs > 0 && transitioning) || undefined}
         >
@@ -377,7 +423,7 @@ export function Sidebar({
               label={footer.tooltip}
               rest={Object.fromEntries(
                 Object.entries(footer).filter(
-                  ([k]) => !['icon', 'tooltip', 'active', 'onClick', 'as'].includes(k),
+                  ([k]) => !['icon', 'tooltip', 'active', 'onClick', 'as', 'secondary'].includes(k),
                 ),
               )}
             >
@@ -399,6 +445,24 @@ export function Sidebar({
               {footer.tooltip}
             </span>
           </div>
+          {footer.secondary ? (
+            <>
+              {navCollapsed ? null : <div className="min-w-0 flex-1" />}
+              <Interactive
+                as={footer.secondary.as}
+                className={cn(NAV_ICON_BTN, 'w-8 h-8')}
+                onClick={footer.secondary.onClick}
+                label={footer.secondary.tooltip}
+                rest={Object.fromEntries(
+                  Object.entries(footer.secondary).filter(
+                    ([k]) => !['icon', 'tooltip', 'onClick', 'as'].includes(k),
+                  ),
+                )}
+              >
+                {footer.secondary.icon}
+              </Interactive>
+            </>
+          ) : null}
         </div>
       ) : null}
     </nav>
