@@ -20,8 +20,15 @@ differences between the apps, not drift.
 Each app takes this as a git dependency, not a published registry package:
 
 ```json
-"gateopen-design-kit": "git+ssh://git@github.com/aviv0zeri/gateopen-design-kit.git#v0.2.0"
+"gateopen-design-kit": "github:aviv0zeri/gateopen-design-kit#v0.2.1"
 ```
+
+If you set this by hand and then run `npm install`, verify `package-lock.json`'s
+`node_modules/gateopen-design-kit` entry actually resolved to the new tag's
+commit — npm's git-dependency resolution has a real footgun where a stale
+lockfile entry can survive a version-string bump alone. If it's still
+pointing at an old commit, force it:
+`npm install gateopen-design-kit@github:aviv0zeri/gateopen-design-kit#<tag>`.
 
 Pin to a tag, not a branch — a consumer should only pick up a token change
 by deliberately bumping the pinned version, the same way any other dependency
