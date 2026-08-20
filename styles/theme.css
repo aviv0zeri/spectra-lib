@@ -1,0 +1,129 @@
+/**
+ * Canonical dashboard theme tokens — GateOpen's palette, verbatim.
+ *
+ * GateOpen's Dashboard is the reference implementation for every dashboard in
+ * this design system; this file IS its token block, shipped from the library
+ * so consumers import it instead of hand-copying it (the copying is how five
+ * apps drifted apart in one day). Import it in the app entry BEFORE the app's
+ * own stylesheet:
+ *
+ *   import 'spectra-lib/styles/theme.css';
+ *   import 'spectra-lib/styles/chrome.css';
+ *   import './lib/theme.css'; // app-specific extras only
+ *
+ * Theme selection supports BOTH contracts in one file:
+ *   - An app with a manual toggle (GateOpen) stamps
+ *     document.documentElement.dataset.theme = 'dark' | 'light' on mount and
+ *     the stamped value always wins.
+ *   - An app with no toggle stamps nothing and follows the OS/browser
+ *     preference via the media query below. Dark is the base (also the
+ *     fallback for browsers that can't evaluate the media feature).
+ *
+ * Keep the SEMANTIC meaning of each name intact:
+ *   --bg      the page behind everything
+ *   --panel   the lightest surface (cards) — lightest in BOTH themes
+ *   --panel2  the middle surface (inputs, secondary buttons)
+ *   --rim     hairline borders
+ *   --void    the extreme away from --bg; it INVERTS between themes
+ */
+:root,
+[data-theme='dark'] {
+  --bg: #1a2332;
+  --panel: #243044;
+  --panel2: #2d3a50;
+  --rim: #3d5068;
+  --text: #dce4ef;
+  --muted: #93a3b8;
+  --accent: #6b8cae;
+  --ok: #69b492;
+  --warn: #d4a648;
+  --bad: #c2685f;
+  --void: #141418;
+  /* The nav rail's nested disclosure group (Sidebar) as its own surface.
+   * Named rather than mixed at the call site because the two themes disagree
+   * about which direction "nested" goes: dark recesses it, light raises it.
+   * --void inverts between themes, so a single shared formula would paint a
+   * near-white veil on a near-white rail in light mode and the group would
+   * vanish along with its inset shadow. */
+  --nav-nest-fill: color-mix(in srgb, var(--void) 16%, transparent);
+  --nav-nest-shadow: color-mix(in srgb, var(--void) 25%, transparent);
+  /* Things that must read as DARK in both themes — a modal scrim, a cast
+   * shadow, a sunken tile. They cannot be mixed from --void at the call site:
+   * --void is the foreground-on-accent colour (--primary-foreground), so it is
+   * *designed* to invert between themes, and anything that borrowed it for
+   * "dark" silently became "light" the moment the light theme loaded. Alphas
+   * are per-theme rather than shared because they were tuned against a
+   * near-black; the light theme mixes a deep navy and needs its own. */
+  --scrim: color-mix(in srgb, var(--void) 62%, transparent);
+  --shadow-cast: color-mix(in srgb, var(--void) 55%, transparent);
+  --tile-sunk: color-mix(in srgb, var(--void) 70%, var(--panel2));
+  /* Ambient glows behind the glass chrome (chrome.css .dash-ambient) —
+   * decorative only, never a surface anything sits flat on, so they carry
+   * their own alpha instead of joining the mixable surface palette above. */
+  --glass-glow-a: rgba(107, 140, 174, 0.62);
+  --glass-glow-b: rgba(124, 106, 200, 0.48);
+}
+
+[data-theme='light'] {
+  --bg: #eef1f6;
+  --panel: #ffffff;
+  --panel2: #f3f6fa;
+  --rim: #ccd6e2;
+  --text: #1a2838;
+  --muted: #4a5a6e;
+  --accent: #3d5a7a;
+  --ok: #3c7a5e;
+  --warn: #a17a2c;
+  --bad: #b64d4d;
+  --void: #f6f7fb;
+  /* Light inverts the nesting cue: the rail is already a translucent
+   * near-white over --bg, so a *darker* nested panel would read as a stain.
+   * It goes the other way — whiter than the rail, toward --panel, the same
+   * "lightest surface sits on top" ordering the rest of this theme uses. The
+   * inset shadow has to be an actual dark to register at all. */
+  --nav-nest-fill: color-mix(in srgb, var(--panel) 78%, transparent);
+  --nav-nest-shadow: color-mix(in srgb, var(--text) 12%, transparent);
+  /* --text is this theme's deep navy, and the only genuinely dark tone in the
+   * palette — --void here is nearly white. A scrim mixed from --void would
+   * BRIGHTEN the page it is meant to dim. */
+  --scrim: color-mix(in srgb, var(--text) 45%, transparent);
+  --shadow-cast: color-mix(in srgb, var(--text) 14%, transparent);
+  --tile-sunk: color-mix(in srgb, var(--accent) 10%, var(--panel2));
+  /* Quieter than dark's: light surfaces are already near-white, so the same
+   * alphas would read as smudges rather than glow. */
+  --glass-glow-a: rgba(87, 124, 160, 0.48);
+  --glass-glow-b: rgba(139, 122, 216, 0.38);
+}
+
+/* No stamp + OS asks for light -> light. Guarded so an explicit dark stamp
+ * still beats the OS. Values duplicated from [data-theme='light'] above, kept
+ * in sync by hand — CSS has no @media-in-a-variable. */
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme='dark']):not([data-theme='light']) {
+    --bg: #eef1f6;
+    --panel: #ffffff;
+    --panel2: #f3f6fa;
+    --rim: #ccd6e2;
+    --text: #1a2838;
+    --muted: #4a5a6e;
+    --accent: #3d5a7a;
+    --ok: #3c7a5e;
+    --warn: #a17a2c;
+    --bad: #b64d4d;
+    --void: #f6f7fb;
+    --nav-nest-fill: color-mix(in srgb, var(--panel) 78%, transparent);
+    --nav-nest-shadow: color-mix(in srgb, var(--text) 12%, transparent);
+    --scrim: color-mix(in srgb, var(--text) 45%, transparent);
+    --shadow-cast: color-mix(in srgb, var(--text) 14%, transparent);
+    --tile-sunk: color-mix(in srgb, var(--accent) 10%, var(--panel2));
+    --glass-glow-a: rgba(87, 124, 160, 0.48);
+    --glass-glow-b: rgba(139, 122, 216, 0.38);
+  }
+}
+
+/* One monospace stack, everywhere. */
+:root,
+[data-theme='dark'],
+[data-theme='light'] {
+  --mono: ui-monospace, 'SF Mono', Menlo, monospace;
+}

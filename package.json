@@ -1,6 +1,6 @@
 {
   "name": "spectra-lib",
-  "version": "0.7.11",
+  "version": "0.8.0",
   "private": true,
   "description": "Aviv's personal shared library -- reusable components/tokens/utilities that span more than one project. Currently: GateOpen's design tokens, a cn() helper, a findUp() build-config utility, cv/portfolio's shared chrome.css/dom.js, and a Radix-based dashboard UI component set shared by GateOpen/bagStore/SpectraHub/Raptor2.",
   "type": "module",
@@ -22,11 +22,15 @@
     "./ui": {
       "types": "./dist/ui/index.d.ts",
       "default": "./dist/ui/index.js"
-    }
+    },
+    "./styles/theme.css": "./styles/theme.css",
+    "./styles/chrome.css": "./styles/chrome.css"
   },
   "files": [
     "dist",
-    "chrome"
+    "chrome",
+    "styles",
+    "docs"
   ],
   "scripts": {
     "build": "tsc",

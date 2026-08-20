@@ -28,9 +28,12 @@ import { cn } from '../cn.js';
  * resolved, same convention as TypeNameConfirmDialog/UnsupportedDeviceGate.
  *
  * Expects `.dash-glass`, `.dash-glass-rail`, `.nav-text-glow` /
- * `.nav-text-glow-active` (row hover/active transition + text-shadow) in the
- * consumer's CSS, plus `--nav-nest-fill` / `--nav-nest-shadow` if any item
- * uses `subItems` (the nested disclosure-group panel).
+ * `.nav-text-glow-active` (row hover/active transition + text-shadow), plus
+ * `--nav-nest-fill` / `--nav-nest-shadow` if any item uses `subItems` (the
+ * nested disclosure-group panel). Do NOT hand-copy these into the app:
+ * import `spectra-lib/styles/chrome.css` (and `styles/theme.css` for the
+ * tokens) — see docs/SIDEBAR.md for the full init guide and the shared
+ * sidebar rules.
  */
 
 /**

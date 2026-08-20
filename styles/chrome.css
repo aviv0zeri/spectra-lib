@@ -1,0 +1,383 @@
+/**
+ * Canonical dashboard chrome — GateOpen's component CSS, verbatim.
+ *
+ * Everything the shared Sidebar (spectra-lib/ui) and the dashboard shell
+ * expect: the glass rail, ambient glows, nav-row text glow, bidi helpers,
+ * and the dash-* utility shapes. Shipped from the library so consumers
+ * import it instead of hand-copying it. Import AFTER the app's Tailwind
+ * entry stylesheet (so Tailwind's own @layer statement fixes the layer
+ * order first) and BEFORE the app's own theme.css:
+ *
+ *   import './index.css';                    // Tailwind
+ *   import 'spectra-lib/styles/theme.css';   // tokens (or app-local tokens)
+ *   import 'spectra-lib/styles/chrome.css';  // this file
+ *   import './lib/theme.css';                // app-specific extras only
+ *
+ * Everything here lives in @layer components ON PURPOSE: an unlayered rule
+ * beats any layered one regardless of specificity or source order, so an
+ * unlayered copy of these classes silently kills Tailwind utilities set on
+ * the same element (this exact bug shipped once — `.nav-text-glow`'s
+ * transition erased `transition-colors` for months). Inside the layer, a
+ * utility always wins, which is the point of combining a helper class and a
+ * utility on one element.
+ */
+@layer components {
+  /* Scrolls (wheel/touch/keyboard) still work — this only hides the
+   * scrollbar chrome, for containers that scroll on overflow but shouldn't
+   * show a visible track. */
+  .no-scrollbar {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* Bidi helpers.
+   *
+   * `.ltr-value` is for a *technical* string inside translated prose: a phone
+   * number, an E.164, a host id, an account SID, a URL, a masked token. The
+   * glyphs must read left-to-right (otherwise the leading `+` of `+972…` hops
+   * to the wrong end in an RTL paragraph). Technical values always hug LEFT,
+   * even in RTL, so a mixed table separates into two visually distinct column
+   * kinds instead of everything competing for the same edge. */
+  .ltr-value {
+    direction: ltr;
+    unicode-bidi: isolate;
+    text-align: left;
+  }
+
+  [dir='rtl'] .ltr-value {
+    text-align: left;
+  }
+
+  /* `.ltr-value-inline` is `.ltr-value`'s sibling for a label/value row: the
+   * value still reads left-to-right, but it sits right beside its own label
+   * rather than in a table column, so it hugs the label's side — right in
+   * RTL, left in LTR. */
+  .ltr-value-inline {
+    direction: ltr;
+    unicode-bidi: isolate;
+  }
+
+  [dir='rtl'] .ltr-value-inline {
+    text-align: right;
+  }
+
+  /* A whole pane that is machine output, not UI copy: a console log, a QR
+   * payload URL. Never mirrors, in any language. */
+  .ltr-block {
+    direction: ltr;
+    text-align: left;
+  }
+
+  /* Sidebar nav-row text glow — plain CSS rather than a Tailwind arbitrary
+   * property because Tailwind v4's scanner drops the comma inside color-mix()
+   * when nested in a hover:[...] bracket (rule silently never compiles).
+   * This class is the SOLE owner of the nav row's transition — rows must NOT
+   * also carry `transition-colors` (transition-property replaces rather than
+   * appends; two owners can only erase each other). */
+  .nav-text-glow {
+    transition:
+      text-shadow 150ms ease,
+      color 150ms ease,
+      background-color 150ms ease;
+  }
+  .nav-text-glow:hover {
+    text-shadow: 0 0 10px color-mix(in srgb, var(--foreground) 45%, transparent);
+  }
+  .nav-text-glow-active {
+    text-shadow: 0 0 10px color-mix(in srgb, var(--accent) 55%, transparent);
+  }
+  .nav-text-glow-active:hover {
+    text-shadow: 0 0 12px color-mix(in srgb, var(--accent) 65%, transparent);
+  }
+
+  /* Container for a group of ToggleField rows — one bordered block with
+   * hairlines between the switches, rather than each row drawing its own box. */
+  .toggle-field-list {
+    display: flex;
+    flex-direction: column;
+    border: 1px solid var(--rim);
+  }
+
+  .toggle-field-list > label {
+    padding-inline: 14px;
+  }
+
+  .toggle-field-list > label + label {
+    border-top: 1px solid var(--rim);
+  }
+
+  /* Shared page chrome — toolbar, form rows, danger zones, avatars. Reuse
+   * these shapes instead of inventing a slightly different padding / border
+   * each time. */
+  .dash-toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    align-items: center;
+  }
+
+  .dash-toolbar input,
+  .dash-form input {
+    flex: 1;
+    min-width: 160px;
+    padding: 10px 12px;
+    min-height: 40px;
+    box-sizing: border-box;
+    border: 1px solid var(--rim);
+    background: var(--panel2);
+    color: var(--text);
+    border-radius: var(--radius);
+    font-size: 14px;
+  }
+
+  .dash-toolbar input:focus,
+  .dash-form input:focus {
+    outline: none;
+    border-color: var(--accent);
+  }
+
+  .dash-form {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    align-items: center;
+  }
+
+  .dash-count {
+    flex: 0 0 auto;
+    font-size: 13px;
+    color: var(--muted);
+    white-space: nowrap;
+  }
+
+  .dash-avatar {
+    flex: 0 0 auto;
+    width: 36px;
+    height: 36px;
+    border-radius: 999px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: color-mix(in srgb, var(--accent) 28%, transparent);
+    color: var(--accent);
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+  }
+
+  .dash-danger {
+    border: 1px solid color-mix(in srgb, var(--bad) 45%, transparent);
+    background: color-mix(in srgb, var(--bad) 8%, transparent);
+    padding: 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    border-radius: var(--radius);
+  }
+
+  .dash-danger h3,
+  .dash-danger h4 {
+    margin: 0;
+    font-size: 14px;
+    color: var(--bad);
+  }
+
+  .dash-danger p {
+    margin: 0;
+    font-size: 13px;
+    color: var(--muted);
+  }
+
+  .dash-table-card {
+    padding: 0;
+    overflow: hidden;
+  }
+
+  .dash-confirm {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .dash-confirm-text {
+    flex: 1 1 auto;
+    min-width: 140px;
+    font-size: 12px;
+    color: var(--muted);
+  }
+
+  .dash-card-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 6px;
+  }
+
+  .dash-note {
+    margin: 0;
+    padding: 10px 12px;
+    border: 1px solid color-mix(in srgb, var(--accent) 40%, transparent);
+    background: color-mix(in srgb, var(--accent) 12%, transparent);
+    color: var(--muted);
+    font-size: 13px;
+    border-radius: var(--radius);
+  }
+
+  .dash-section-title {
+    margin: 0;
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--accent);
+  }
+
+  /* A labeled group within a page — icon + title + sub, followed by whatever
+   * content the section holds. */
+  .dash-section {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .dash-section-head {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+  }
+
+  .dash-section-icon {
+    flex: 0 0 auto;
+    margin-top: 2px;
+    color: var(--accent);
+  }
+
+  .dash-section-sub {
+    margin: 0;
+    color: var(--muted);
+    font-size: 13px;
+    line-height: 1.5;
+  }
+
+  .dash-section-hint {
+    margin-top: 2px;
+    font-size: 12.5px;
+    font-style: italic;
+  }
+
+  /* Inline "nothing here yet" box — a dashed rim reads as an empty slot rather
+   * than a stray line of text sitting under a header. */
+  .dash-empty-box {
+    margin: 0;
+    padding: 16px;
+    border: 1px dashed var(--rim);
+    border-radius: var(--radius);
+    color: var(--muted);
+    font-size: 13px;
+    text-align: center;
+  }
+
+  /* Glass shell chrome.
+   *
+   * backdrop-filter only reads as glass when something colorful is painted
+   * behind the element, and the shell layout deliberately never scrolls
+   * content under the sidebar (it sits beside <main> in flex flow). So the
+   * shell root paints soft ambient glows for the glass to refract, the nav
+   * floats over them as a translucent blurred panel, and <main> stays an
+   * opaque card — page content contrast never depends on the effect. */
+  .dash-ambient {
+    --amb-x1: 4%;
+    --amb-x2: 98%;
+    background:
+      radial-gradient(54rem 40rem at var(--amb-x1) -12%, var(--glass-glow-a), transparent 62%),
+      radial-gradient(46rem 34rem at var(--amb-x2) 116%, var(--glass-glow-b), transparent 64%),
+      var(--bg);
+  }
+
+  /* Gradient positions aren't logical-direction-aware — mirror them so the
+   * brighter glow stays on the sidebar's side in he/ar. */
+  [dir='rtl'] .dash-ambient {
+    --amb-x1: 96%;
+    --amb-x2: 2%;
+  }
+
+  .dash-glass {
+    /* Prefixed FIRST, standard LAST — the standard property has to win.
+     * Written the other way round, Lightning CSS (Vite's minifier) drops the
+     * unprefixed declaration entirely and ships only -webkit-, which Chrome
+     * and Firefox do not honour: the rail keeps its gradient and border and
+     * silently loses the blur. Nothing errors; it just stops being glass. */
+    -webkit-backdrop-filter: blur(18px) saturate(150%);
+    backdrop-filter: blur(18px) saturate(150%);
+  }
+
+  .dash-glass-rail {
+    /* Top layer is a whisper of accent fading out — glass picks up the scene's
+     * color instead of reading as gray plastic. */
+    background:
+      linear-gradient(180deg, color-mix(in srgb, var(--accent) 12%, transparent), transparent 55%),
+      linear-gradient(
+        180deg,
+        color-mix(in srgb, var(--panel) 52%, transparent) 0%,
+        color-mix(in srgb, var(--panel2) 42%, transparent) 100%
+      );
+    border: 1px solid color-mix(in srgb, var(--rim) 52%, transparent);
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.07),
+      0 24px 48px -16px rgba(10, 16, 24, 0.7),
+      0 8px 16px -10px rgba(10, 16, 24, 0.5);
+  }
+
+  [data-theme='light'] .dash-glass-rail {
+    background:
+      linear-gradient(180deg, color-mix(in srgb, var(--accent) 8%, transparent), transparent 55%),
+      linear-gradient(
+        180deg,
+        color-mix(in srgb, var(--panel) 54%, transparent) 0%,
+        color-mix(in srgb, var(--panel2) 44%, transparent) 100%
+      );
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.55),
+      0 24px 48px -16px rgba(26, 40, 56, 0.32),
+      0 8px 16px -10px rgba(26, 40, 56, 0.2);
+  }
+
+  /* Same light treatment for OS-following apps that stamp no data-theme. */
+  @media (prefers-color-scheme: light) {
+    :root:not([data-theme='dark']):not([data-theme='light']) .dash-glass-rail {
+      background:
+        linear-gradient(
+          180deg,
+          color-mix(in srgb, var(--accent) 8%, transparent),
+          transparent 55%
+        ),
+        linear-gradient(
+          180deg,
+          color-mix(in srgb, var(--panel) 54%, transparent) 0%,
+          color-mix(in srgb, var(--panel2) 44%, transparent) 100%
+        );
+      box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.55),
+        0 24px 48px -16px rgba(26, 40, 56, 0.32),
+        0 8px 16px -10px rgba(26, 40, 56, 0.2);
+    }
+  }
+
+  /* Header/footer share the glass but stay flat bars, not floating panels. */
+  .dash-glass-bar {
+    background: color-mix(in srgb, var(--panel) 72%, transparent);
+  }
+
+  /* Translucency is an aesthetic, not a requirement: high contrast
+   * re-solidifies the chrome. Apps that don't offer the toggle simply never
+   * add the class. */
+  .a11y-high-contrast .dash-glass-rail,
+  .a11y-high-contrast .dash-glass-bar {
+    background: var(--panel);
+  }
+
+  .a11y-high-contrast .dash-ambient {
+    background: var(--bg);
+  }
+}
