@@ -54,7 +54,29 @@ function DialogContent({ className, children, showCloseButton = true, ...props }
               className="absolute end-3.5 top-3.5 rounded-sm text-muted-foreground opacity-70 transition-opacity outline-none hover:opacity-100 focus-visible:ring-[3px] focus-visible:ring-ring/50 disabled:pointer-events-none"
             >
               <X className="size-4" />
-              <span className="sr-only">Close</span>
+              {/* Screen-reader label only. Inline style, not just the
+                  `sr-only` class: this component ships to consumers whose
+                  Tailwind build may not generate that utility at all (it
+                  rendered as visible text -- "X Close" -- in a consumer
+                  whose build never had any other `sr-only` usage to catch
+                  it missing). The standard visually-hidden recipe below
+                  works with zero dependency on the consumer's CSS. */}
+              <span
+                className="sr-only"
+                style={{
+                  position: 'absolute',
+                  width: 1,
+                  height: 1,
+                  padding: 0,
+                  margin: -1,
+                  overflow: 'hidden',
+                  clip: 'rect(0, 0, 0, 0)',
+                  whiteSpace: 'nowrap',
+                  border: 0,
+                }}
+              >
+                Close
+              </span>
             </DialogPrimitive.Close>
           ) : null}
         </DialogPrimitive.Content>
