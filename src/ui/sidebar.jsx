@@ -52,7 +52,7 @@ const NAV_ITEM_BASE =
 const NAV_ITEM_ACTIVE =
   'nav-text-glow-active bg-[color-mix(in_srgb,var(--accent)_17%,transparent)] text-primary font-semibold shadow-[inset_0_0_0_1px_color-mix(in_srgb,var(--accent)_30%,transparent)] hover:bg-[color-mix(in_srgb,var(--accent)_22%,transparent)] motion-safe:animate-[breath-glow_4.5s_ease-in-out_infinite]';
 const NAV_SUBITEM_BASE =
-  'nav-text-glow w-full min-w-0 flex items-center gap-2 px-[10px] py-2 text-[13.5px] leading-[1.35] rounded-xl bg-transparent text-foreground text-start overflow-hidden whitespace-nowrap cursor-pointer hover:bg-[color-mix(in_srgb,var(--foreground)_8%,transparent)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60 disabled:opacity-45 disabled:cursor-not-allowed';
+  'nav-text-glow w-full min-w-0 flex items-center gap-2.5 px-[10px] py-[10px] text-[14.5px] leading-[1.35] rounded-xl bg-transparent text-foreground text-start overflow-hidden whitespace-nowrap cursor-pointer hover:bg-[color-mix(in_srgb,var(--foreground)_8%,transparent)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60 disabled:opacity-45 disabled:cursor-not-allowed';
 const NAV_ICON_BTN =
   'flex shrink-0 items-center justify-center rounded-lg bg-transparent text-muted-foreground cursor-pointer transition-colors duration-150 hover:bg-[color-mix(in_srgb,var(--foreground)_8%,transparent)] hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60';
 const NAV_LABEL_BASE = 'overflow-hidden text-ellipsis whitespace-nowrap';
@@ -275,7 +275,7 @@ export function Sidebar({
       >
         {Icon ? (
           <span className="relative inline-flex shrink-0">
-            <Icon size={sub ? 15 : 17} className="shrink-0" />
+            <Icon size={17} className="shrink-0" />
             {alert ? <AlertDot /> : null}
           </span>
         ) : null}
