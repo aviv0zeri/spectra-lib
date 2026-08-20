@@ -44,10 +44,12 @@ export {
 } from './select.js';
 export { Sidebar } from './sidebar.js';
 export { default as StatusDot } from './status-dot.js';
+export { StatusRow } from './status-row.js';
 export { Switch } from './switch.js';
 export { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from './table.js';
 export { Toast } from './toast.js';
 export { ToggleField } from './toggle-field.js';
+export { UsageMeter } from './usage-meter.js';
 export { default as TypeNameConfirmDialog } from './type-name-confirm-dialog.js';
 export {
   default as UnsupportedDeviceGate,
