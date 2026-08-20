@@ -173,12 +173,20 @@ export function Sidebar({
   // generalized to however many groups a consumer passes. Manual toggling
   // after that first auto-expand is untouched by this effect.
   const [expandedGroups, setExpandedGroups] = useState(/** @type {Record<string, boolean>} */ ({}));
-  const activeGroupIdsRef = useRef(/** @type {Set<string>} */ (new Set()));
   const activeGroupIdsKey = items
     .filter(hasSubItems)
     .filter((g) => (g.subItems ?? []).some((s) => s.active))
     .map((g) => g.id)
     .join(',');
+  // Seeded with whatever's already active on the FIRST render, not an empty
+  // set — otherwise a page that mounts already inside a group (a deep link,
+  // or a refresh on a scoped URL) reads as a "transition into" that group on
+  // mount and auto-expands it a beat later, which is a worse first paint
+  // than just... rendering collapsed like every other load. Only a genuine
+  // transition WHILE mounted (a click, a nav) should trigger the expand.
+  const activeGroupIdsRef = useRef(
+    /** @type {Set<string>} */ (new Set(activeGroupIdsKey ? activeGroupIdsKey.split(',') : [])),
+  );
   useEffect(() => {
     const current = new Set(activeGroupIdsKey ? activeGroupIdsKey.split(',') : []);
     const prev = activeGroupIdsRef.current;
