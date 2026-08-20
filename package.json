@@ -1,8 +1,8 @@
 {
   "name": "spectra-lib",
-  "version": "0.3.0",
+  "version": "0.5.0",
   "private": true,
-  "description": "Aviv's personal shared library -- reusable components/tokens/utilities that span more than one project. Currently: GateOpen's design tokens (single source for colors used across Dashboard, Website, and MobileApp).",
+  "description": "Aviv's personal shared library -- reusable components/tokens/utilities that span more than one project. Currently: GateOpen's design tokens, a cn() helper, a findUp() build-config utility, and cv/portfolio's shared chrome.css/dom.js.",
   "type": "module",
   "main": "dist/tokens.js",
   "types": "dist/tokens.d.ts",
@@ -10,16 +10,32 @@
     ".": {
       "types": "./dist/tokens.d.ts",
       "default": "./dist/tokens.js"
+    },
+    "./cn": {
+      "types": "./dist/cn.d.ts",
+      "default": "./dist/cn.js"
+    },
+    "./node-utils": {
+      "types": "./dist/node-utils.d.ts",
+      "default": "./dist/node-utils.js"
     }
   },
   "files": [
-    "dist"
+    "dist",
+    "chrome"
   ],
   "scripts": {
     "build": "tsc",
     "prepare": "npm run build"
   },
+  "peerDependencies": {
+    "clsx": "^2.1.1",
+    "tailwind-merge": "^3.6.0"
+  },
   "devDependencies": {
+    "@types/node": "^22.10.2",
+    "clsx": "^2.1.1",
+    "tailwind-merge": "^3.6.0",
     "typescript": "^5.9.3"
   },
   "engines": {
