@@ -1,7 +1,7 @@
 import { Plus } from 'lucide-react';
 
 import { cn } from '../cn.js';
-import { Button } from './button.jsx';
+import { Button } from './button.js';
 
 const ICON_PX = { 'icon-sm': 14, icon: 15, 'icon-lg': 18 };
 

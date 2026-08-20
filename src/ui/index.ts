@@ -1,5 +1,5 @@
-export { Badge, badgeVariants } from './badge.jsx';
-export { Button, buttonVariants } from './button.jsx';
+export { Badge, badgeVariants } from './badge.js';
+export { Button, buttonVariants } from './button.js';
 export {
   Card,
   CardHeader,
@@ -8,9 +8,9 @@ export {
   CardAction,
   CardContent,
   CardFooter,
-} from './card.jsx';
-export { ConfirmDialog } from './confirm-dialog.jsx';
-export { CreateButton } from './create-button.jsx';
+} from './card.js';
+export { ConfirmDialog } from './confirm-dialog.js';
+export { CreateButton } from './create-button.js';
 export {
   Dialog,
   DialogTrigger,
@@ -22,14 +22,14 @@ export {
   DialogTitle,
   DialogDescription,
   DialogFooter,
-} from './dialog.jsx';
-export { Dropdown } from './dropdown.jsx';
-export { default as EmptyComingSoon } from './empty-coming-soon.jsx';
-export { Input } from './input.jsx';
-export { Label } from './label.jsx';
-export { KebabMenu, KebabMenuItem } from './menu.jsx';
-export { NestedSidebar, NestedSidebarItem } from './nested-sidebar.jsx';
-export { PageShell, PageHeader, PageGrid, PageEmpty, PageMessage } from './page-shell.jsx';
+} from './dialog.js';
+export { Dropdown } from './dropdown.js';
+export { default as EmptyComingSoon } from './empty-coming-soon.js';
+export { Input } from './input.js';
+export { Label } from './label.js';
+export { KebabMenu, KebabMenuItem } from './menu.js';
+export { NestedSidebar, NestedSidebarItem } from './nested-sidebar.js';
+export { PageShell, PageHeader, PageGrid, PageEmpty, PageMessage } from './page-shell.js';
 export {
   Select,
   SelectContent,
@@ -41,14 +41,14 @@ export {
   SelectSeparator,
   SelectTrigger,
   SelectValue,
-} from './select.jsx';
-export { default as StatusDot } from './status-dot.jsx';
-export { Switch } from './switch.jsx';
-export { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from './table.jsx';
-export { Toast } from './toast.jsx';
-export { ToggleField } from './toggle-field.jsx';
-export { default as TypeNameConfirmDialog } from './type-name-confirm-dialog.jsx';
+} from './select.js';
+export { default as StatusDot } from './status-dot.js';
+export { Switch } from './switch.js';
+export { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from './table.js';
+export { Toast } from './toast.js';
+export { ToggleField } from './toggle-field.js';
+export { default as TypeNameConfirmDialog } from './type-name-confirm-dialog.js';
 export {
   default as UnsupportedDeviceGate,
   detectDeviceClass,
-} from './unsupported-device-gate.jsx';
+} from './unsupported-device-gate.js';

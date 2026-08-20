@@ -1,5 +1,5 @@
 import { cn } from '../cn.js';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './select.jsx';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './select.js';
 
 /**
  * The dropdown — a themed picker over the Select primitive, meant to replace

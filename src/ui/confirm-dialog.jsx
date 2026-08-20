@@ -1,4 +1,4 @@
-import { Button } from './button.jsx';
+import { Button } from './button.js';
 import {
   Dialog,
   DialogContent,
@@ -6,7 +6,7 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from './dialog.jsx';
+} from './dialog.js';
 
 /**
  * The confirm/cancel dialog — a themed replacement for `window.confirm()`,

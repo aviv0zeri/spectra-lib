@@ -1,5 +1,5 @@
 import { cn } from '../cn.js';
-import { Switch } from './switch.jsx';
+import { Switch } from './switch.js';
 
 /**
  * A labelled on/off control, pairing a `Switch` with its label/description in

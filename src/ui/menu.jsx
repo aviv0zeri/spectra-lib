@@ -2,7 +2,7 @@ import { DropdownMenu } from 'radix-ui';
 import { Ellipsis } from 'lucide-react';
 
 import { cn } from '../cn.js';
-import { Button } from './button.jsx';
+import { Button } from './button.js';
 
 /**
  * Kebab overflow menu — the home for secondary and destructive row/card

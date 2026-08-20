@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 
-import { Button } from './button.jsx';
+import { Button } from './button.js';
 import {
   Dialog,
   DialogContent,
@@ -8,9 +8,9 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from './dialog.jsx';
-import { Input } from './input.jsx';
-import { Label } from './label.jsx';
+} from './dialog.js';
+import { Input } from './input.js';
+import { Label } from './label.js';
 
 /**
  * Exact name to type — mono chip so the string stands out (GitHub-style).
