@@ -96,6 +96,22 @@ Pin to a tag, not a branch — a consumer should only pick up a change by
 deliberately bumping the pinned version, the same way any other dependency
 upgrade works. Never point at `main` directly.
 
+This repo is public (as of 2026-08-20) specifically so consumers can install
+it in CI/Docker without an SSH key. That alone isn't sufficient, though: npm's
+`hosted-git-info` normalizes any `github.com` git dependency spec to a
+`git+ssh://git@github.com/...` URL internally, regardless of what protocol is
+actually written in `package.json` — so a build environment with no SSH key
+still needs one line before `npm ci`/`npm install` runs:
+
+```sh
+git config --global url."https://github.com/".insteadOf "ssh://git@github.com/"
+```
+
+This rewrites `ssh://` to `https://` at the git transport layer, so npm's
+`ls-remote`/clone calls resolve anonymously against the public repo instead of
+attempting (and failing) to authenticate. See `.github/workflows/ci.yml` and
+`docker/client/dashboard/Dockerfile` in GateOpen for the applied pattern.
+
 GateOpen's MobileApp imports `DARK`/`LIGHT` straight into its
 `themePalettes.js`. Its Dashboard and Website don't consume JS at the
 CSS-custom-property layer directly, so each has a small generator script
