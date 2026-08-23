@@ -27,6 +27,13 @@ import { cn } from '../cn.js';
  * No internal i18n: every label/tooltip is a plain string you already
  * resolved, same convention as TypeNameConfirmDialog/UnsupportedDeviceGate.
  *
+ * `className` merges onto the root `<nav>` (later classes win, same as any
+ * `cn()` call) — for a shell that places the rail itself via a flex-row
+ * parent (every Dashboard), leave it unset. It exists for a page with no
+ * such parent (a single-column public site) that needs to override
+ * placement entirely, e.g. `position: fixed` pinned to a viewport corner
+ * instead of sitting in document flow — see eliyaWebsite's `.rail-corner`.
+ *
  * Expects `.dash-glass`, `.dash-glass-rail`, `.nav-text-glow` /
  * `.nav-text-glow-active` (row hover/active transition + text-shadow), plus
  * `--nav-nest-fill` / `--nav-nest-shadow` if any item uses `subItems` (the
@@ -148,6 +155,7 @@ function Interactive({ as: Comp, className, onClick, active, label, children, re
  *     },
  *     [extraProp: string]: any,
  *   },
+ *   className?: string,
  * }} props
  */
 export function Sidebar({
@@ -163,6 +171,7 @@ export function Sidebar({
   groupExpandLabel,
   brand,
   footer,
+  className,
 }) {
   // Collapse state is externally controlled when the caller passes both
   // isCollapsed and onToggleCollapse (e.g. a shell that already owns this
@@ -303,6 +312,7 @@ export function Sidebar({
         'rounded-2xl select-none',
         transitionClass,
         navCollapsed ? 'w-16 px-2 py-2.5' : 'w-56 px-2.5 py-2.5',
+        className,
       )}
       aria-label={ariaLabel}
       aria-busy={transitionMs > 0 ? transitioning : undefined}
