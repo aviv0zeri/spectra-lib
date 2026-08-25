@@ -51,7 +51,7 @@ function DialogContent({ className, children, showCloseButton = true, ...props }
           {showCloseButton ? (
             <DialogPrimitive.Close
               data-slot="dialog-close"
-              className="absolute end-3.5 top-3.5 rounded-sm text-muted-foreground opacity-70 transition-opacity outline-none hover:opacity-100 focus-visible:ring-[3px] focus-visible:ring-ring/50 disabled:pointer-events-none"
+              className="absolute end-3.5 top-3.5 cursor-pointer rounded-sm text-muted-foreground opacity-70 transition-opacity outline-none hover:opacity-100 focus-visible:ring-[3px] focus-visible:ring-ring/50 disabled:pointer-events-none"
             >
               <X className="size-4" />
               {/* Screen-reader label only. Inline style, not just the
