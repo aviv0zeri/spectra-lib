@@ -226,6 +226,9 @@ export function Sidebar({
   // collapses whichever other group was open, manually or via auto-expand
   // below. At most one group is ever expanded at a time.
   const [expandedGroups, setExpandedGroups] = useState(/** @type {Record<string, boolean>} */ ({}));
+  // Object.keys is safe here precisely because at most one group is ever
+  // expanded -- see above.
+  const openGroupId = Object.keys(expandedGroups)[0];
   const activeGroupIdsKey = items
     .filter(hasSubItems)
     .filter((g) => (g.subItems ?? []).some((s) => s.active))
@@ -342,14 +345,24 @@ export function Sidebar({
         ) : null}
       </div>
 
+      {/* At most one group is ever open (see expandedGroups above) -- while
+          it is, every OTHER row (sibling groups and flat items alike) hides
+          rather than sitting there collapsed-and-irrelevant. This is a
+          drill-down, not an accordion-among-many: the point of opening
+          Settlements is to work inside it, and Phone/Billing/Databases/etc.
+          sitting below just added scroll and noise to a screen that's now
+          about one thing. Closing the group (its own header is still
+          rendered and still clickable) brings everything back. */}
       <div
         className="flex-1 min-h-0 flex flex-col gap-1 overflow-hidden"
         inert={(transitionMs > 0 && transitioning) || undefined}
       >
         {items.map((item) => {
+          const groupOpen = hasSubItems(item) && Boolean(expandedGroups[item.id]);
+          if (openGroupId && item.id !== openGroupId) return null;
+
           if (!hasSubItems(item)) return renderRow(item, false);
 
-          const groupOpen = Boolean(expandedGroups[item.id]);
           const subItems = item.subItems ?? [];
           const groupActive = subItems.some((s) => s.active);
           // A closed group hides its subItems entirely, so an alert inside
