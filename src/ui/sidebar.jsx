@@ -36,7 +36,7 @@ import { cn } from '../cn.js';
  *
  * Expects `.dash-glass`, `.dash-glass-rail`, `.nav-text-glow` /
  * `.nav-text-glow-active` (row hover/active transition + text-shadow), plus
- * `--nav-nest-fill` / `--nav-nest-shadow` if any item uses `subItems` (the
+ * `--nav-nest-fill` / `--nav-nest-shadow` if any item uses `submenu` (the
  * nested disclosure-group panel). Do NOT hand-copy these into the app:
  * import `spectra-lib/styles/chrome.css` (and `styles/theme.css` for the
  * tokens) — see docs/SIDEBAR.md for the full init guide and the shared
@@ -52,7 +52,7 @@ import { cn } from '../cn.js';
  *   alert?: boolean,
  *   onClick?: () => void,
  *   as?: import('react').ElementType,
- *   subItems?: SidebarNavItem[],
+ *   submenu?: SidebarNavItem[],
  *   [extraProp: string]: any,
  * }} SidebarNavItem
  */
@@ -70,8 +70,8 @@ const NAV_LABEL_EXPANDED = 'max-w-[160px] opacity-100';
 const NAV_LABEL_COLLAPSED = 'max-w-0 opacity-0';
 
 /** @param {SidebarNavItem} item */
-function hasSubItems(item) {
-  return Array.isArray(item.subItems) && item.subItems.length > 0;
+function hasSubmenu(item) {
+  return Array.isArray(item.submenu) && item.submenu.length > 0;
 }
 
 /** A small dot pinned to an icon's corner, same shape regardless of rail
@@ -222,7 +222,7 @@ export function Sidebar({
     }
   }
 
-  // Disclosure groups (items with subItems) are an accordion — opening one
+  // Disclosure groups (items with a submenu) are an accordion — opening one
   // collapses whichever other group was open, manually or via auto-expand
   // below. At most one group is ever expanded at a time.
   const [expandedGroups, setExpandedGroups] = useState(/** @type {Record<string, boolean>} */ ({}));
@@ -239,8 +239,8 @@ export function Sidebar({
   // expanded -- see above.
   const openGroupId = Object.keys(expandedGroups)[0];
   const activeGroupIdsKey = items
-    .filter(hasSubItems)
-    .filter((g) => (g.subItems ?? []).some((s) => s.active))
+    .filter(hasSubmenu)
+    .filter((g) => (g.submenu ?? []).some((s) => s.active))
     .map((g) => g.id)
     .join(',');
   // Seeded with whatever's already active on the FIRST render, not an empty
@@ -282,7 +282,7 @@ export function Sidebar({
 
   /** @param {SidebarNavItem} item, @param {boolean} sub */
   function renderRow(item, sub) {
-    const { id, icon: Icon, label, active, alert, onClick, as, subItems, ...rest } = item;
+    const { id, icon: Icon, label, active, alert, onClick, as, submenu, ...rest } = item;
     return (
       <Interactive
         key={id}
@@ -329,7 +329,13 @@ export function Sidebar({
       aria-label={ariaLabel}
       aria-busy={transitionMs > 0 ? transitioning : undefined}
     >
-      <div className="flex-none flex items-center justify-start gap-2 pb-1">
+      <div
+        className={cn(
+          'flex-none flex items-center justify-start gap-2 pb-1',
+          'transition-opacity duration-150',
+          openGroupId && 'opacity-35',
+        )}
+      >
         <button
           type="button"
           className={cn(NAV_ICON_BTN, 'w-8 h-8')}
@@ -354,25 +360,28 @@ export function Sidebar({
         ) : null}
       </div>
 
-      {/* At most one group is ever open (see expandedGroups above), but
-          every row stays put -- opening a group expands it in place rather
-          than hiding sibling rows, so picking (or navigating into) any
-          nested item never shifts anything else in the rail. */}
+      {/* At most one group is ever open (see expandedGroups above) -- while
+          it is, every OTHER row (sibling groups and flat items alike) hides
+          so full attention goes to the open submenu, and the still-visible
+          chrome above/below (the collapse toggle, the footer) dims for the
+          same reason. Closing the group (its own header is still rendered
+          and still clickable) brings everything back. */}
       <div
         className="flex-1 min-h-0 flex flex-col gap-1 overflow-hidden"
         inert={(transitionMs > 0 && transitioning) || undefined}
       >
         {items.map((item) => {
-          const groupOpen = hasSubItems(item) && Boolean(expandedGroups[item.id]);
+          const groupOpen = hasSubmenu(item) && Boolean(expandedGroups[item.id]);
+          if (openGroupId && item.id !== openGroupId) return null;
 
-          if (!hasSubItems(item)) return renderRow(item, false);
+          if (!hasSubmenu(item)) return renderRow(item, false);
 
-          const subItems = item.subItems ?? [];
-          const groupActive = subItems.some((s) => s.active);
-          // A closed group hides its subItems entirely, so an alert inside
+          const submenu = item.submenu ?? [];
+          const groupActive = submenu.some((s) => s.active);
+          // A closed group hides its submenu entirely, so an alert inside
           // one would otherwise be invisible until the operator happens to
           // open the group -- surface it on the group's own icon too.
-          const groupAlert = Boolean(item.alert) || subItems.some((s) => s.alert);
+          const groupAlert = Boolean(item.alert) || submenu.some((s) => s.alert);
           // Closing: drop to {} (nothing open). Opening: replace the whole
           // state with just this group, so whatever else was open closes.
           const toggle = () =>
@@ -442,7 +451,7 @@ export function Sidebar({
                     'shadow-[inset_0_1px_2px_var(--nav-nest-shadow)]',
                   )}
                 >
-                  {subItems.map((sub) => renderRow(sub, true))}
+                  {submenu.map((sub) => renderRow(sub, true))}
                 </div>
               ) : null}
             </div>
@@ -455,6 +464,8 @@ export function Sidebar({
           className={cn(
             'flex-none flex items-center pt-2 mt-1',
             'border-t border-[color-mix(in_srgb,var(--border)_55%,transparent)]',
+            'transition-opacity duration-150',
+            openGroupId && 'opacity-35',
             // A second footer action needs room to sit apart from the first
             // (a row with a spacer when expanded, stacked when there's no
             // width to spare) -- a single action just centers/leans start.

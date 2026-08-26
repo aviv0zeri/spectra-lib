@@ -74,7 +74,7 @@ export default function Sidebar({ activeTab, onTabChange, authUser }) {
     active: item.id === activeTab,
     onClick: () => onTabChange(item.id),
     // For a disclosure group instead: omit active/onClick and provide
-    // subItems: [{ id, icon, label, active, onClick }, ...]
+    // submenu: [{ id, icon, label, active, onClick }, ...]
   }));
 
   return (
@@ -120,8 +120,12 @@ Apps using react-router pass `as: NavLink, to, end` on items instead of
    (it read as jank); do not reintroduce it per-app.
 4. **One nested group open at a time.** The accordion behavior is built into
    the shared component — never re-implement grouping in the wrapper.
-5. **Group headers are toggle-only.** A parent with `subItems` has no page of
+5. **Group headers are toggle-only.** A parent with a `submenu` has no page of
    its own; clicking it opens/closes the group and never navigates.
+5b. **Opening a submenu hides every other row** (sibling groups and flat
+   items alike), and dims the collapse-toggle row and footer -- all attention
+   goes to the open submenu. Closing it (its own header stays clickable)
+   brings everything back.
 6. **Sub-items render at the same text/icon size as top-level items** (the
    component handles this — indentation alone carries the nesting cue).
 7. **Overflow clips.** The nav list does not scroll with a hidden scrollbar;
