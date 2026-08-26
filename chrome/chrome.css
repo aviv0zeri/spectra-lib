@@ -32,18 +32,20 @@
   --line-soft: rgba(15, 19, 32, .07);
   --sheen:     rgba(255, 255, 255, .75);
 
-  /* Graphite page, ONE cool accent. a1 is the only colour that carries meaning
+  /* Graphite page, ONE accent. a1 is the only colour that carries meaning
      (section numbers, links, the active row); a2 is a single step of it, and
      a3/a4 are neutral greys that exist purely to give the background field
-     some depth. Adding a second meaningful hue is what made this a rainbow. */
-  --a1: #35618f;   /* steel blue — the accent */
-  --a2: #4a7099;   /* one step of it          */
+     some depth. Adding a second meaningful hue is what made this a rainbow.
+     Warm terracotta rather than the original steel blue — same graphite/one-
+     accent structure, warmer and more personal than the dashboard's palette. */
+  --a1: #9c5a3c;   /* dusty rust/terracotta — the accent */
+  --a2: #b3765a;   /* one step of it, lighter */
   --a3: #6c717c;   /* neutral                 */
   --a4: #8d919b;   /* neutral, lighter        */
-  --claude: #35618f;
+  --claude: #9c5a3c;
 
-  --glow-1: rgba(53, 97, 143, .22);
-  --glow-2: rgba(53, 97, 143, .16);
+  --glow-1: rgba(156, 90, 60, .22);
+  --glow-2: rgba(156, 90, 60, .16);
   --shadow: 0 20px 60px -28px rgba(15, 19, 32, .45);
 
   --blob-o: .40;
@@ -84,14 +86,14 @@
     --line-soft: rgba(238, 241, 248, .08);
     --sheen:     rgba(255, 255, 255, .10);
 
-    --a1: #7fb0e0;
-    --a2: #6f9cc9;
+    --a1: #cf8f6c;   /* dusty clay — dark mode's version of the rust accent */
+    --a2: #b97b5c;
     --a3: #545a66;
     --a4: #666d7a;
-    --claude: #7fb0e0;
+    --claude: #cf8f6c;
 
-    --glow-1: rgba(127, 176, 224, .26);
-    --glow-2: rgba(127, 176, 224, .18);
+    --glow-1: rgba(207, 143, 108, .26);
+    --glow-2: rgba(207, 143, 108, .18);
     --shadow: 0 24px 70px -30px rgba(0, 0, 0, .85);
 
     --blob-o: .46;
