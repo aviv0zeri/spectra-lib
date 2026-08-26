@@ -33,7 +33,17 @@
   --panel2: #2d3a50;
   --rim: #3d5068;
   --text: #dce4ef;
-  --muted: #93a3b8;
+  /* Muted TEXT (labels, hints, placeholders) — not a surface. Raised from
+   * #93a3b8 (2026-08-27): that value was only ~4.46:1 against --panel2
+   * (bg-secondary — the actual background under every placeholder, field
+   * label, and empty-state line that reads via --muted-foreground), just
+   * under WCAG AA for normal text and nowhere near enough headroom for text
+   * people are expected to actually read at 12-13px. #adc0d6 is ~7.1:1
+   * against --panel, ~6.2:1 against --panel2, and ~8.5:1 against --bg —
+   * comfortably AA everywhere it appears — while staying visibly dimmer
+   * than --text (#dce4ef), so it still reads as secondary/subdued rather
+   * than full-strength foreground text. */
+  --muted: #adc0d6;
   --accent: #6b8cae;
   --ok: #69b492;
   --warn: #d4a648;

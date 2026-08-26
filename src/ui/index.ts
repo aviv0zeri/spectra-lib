@@ -32,6 +32,7 @@ export { LinkedHubCard } from './linked-hub-card.js';
 export { NestedSidebar, NestedSidebarItem } from './nested-sidebar.js';
 export { PageShell, PageHeader, PageGrid, PageEmpty, PageMessage } from './page-shell.js';
 export { ProfileAvatar } from './profile-avatar.js';
+export { SearchInput } from './search-input.js';
 export {
   Select,
   SelectContent,
