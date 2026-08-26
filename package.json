@@ -1,8 +1,8 @@
 {
   "name": "spectra-lib",
-  "version": "0.14.0",
+  "version": "0.15.0",
   "private": true,
-  "description": "Aviv's personal shared library -- reusable components/tokens/utilities that span more than one project. Currently: GateOpen's design tokens, a cn() helper, a findUp() build-config utility, cv/portfolio's shared chrome.css/dom.js, a Radix-based dashboard UI component set shared by GateOpen/bagStore/SpectraHub/Raptor2, and a GSAP scroll-reveal module (React + vanilla) shared by eliyaWebsite/spectra-website/portfolio-family sites.",
+  "description": "Aviv's personal shared library -- reusable components/tokens/utilities that span more than one project. Currently: GateOpen's design tokens, a cn() helper, a findUp() build-config utility, cv/portfolio's shared chrome.css/dom.js, a Radix-based dashboard UI component set shared by GateOpen/bagStore/SpectraHub/Raptor2, a GSAP scroll-reveal module (React + vanilla) shared by eliyaWebsite/spectra-website/portfolio-family sites, and a tech/brand icon set (React + vanilla) shared by spectra-website and cv.",
   "type": "module",
   "main": "dist/tokens.js",
   "types": "dist/tokens.d.ts",
@@ -30,6 +30,10 @@
     "./reveal": {
       "types": "./dist/reveal.d.ts",
       "default": "./dist/reveal.js"
+    },
+    "./icons": {
+      "types": "./dist/icons.d.ts",
+      "default": "./dist/icons.js"
     },
     "./styles/theme.css": "./styles/theme.css",
     "./styles/chrome.css": "./styles/chrome.css"
