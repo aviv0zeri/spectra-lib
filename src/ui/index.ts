@@ -50,6 +50,7 @@ export { default as StatusDot } from './status-dot.js';
 export { StatusRow } from './status-row.js';
 export { Switch } from './switch.js';
 export { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from './table.js';
+export { Textarea } from './textarea.js';
 export { Toast } from './toast.js';
 export { ToggleField } from './toggle-field.js';
 export { UsageMeter } from './usage-meter.js';
