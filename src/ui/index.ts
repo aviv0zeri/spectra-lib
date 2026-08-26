@@ -45,6 +45,7 @@ export {
   SelectValue,
 } from './select.js';
 export { Sidebar } from './sidebar.js';
+export { StatCard } from './stat-card.js';
 export { default as StatusDot } from './status-dot.js';
 export { StatusRow } from './status-row.js';
 export { Switch } from './switch.js';
