@@ -361,20 +361,34 @@ export function Sidebar({
       </div>
 
       {/* At most one group is ever open (see expandedGroups above) -- while
-          it is, every OTHER row (sibling groups and flat items alike) hides
-          so full attention goes to the open submenu, and the still-visible
-          chrome above/below (the collapse toggle, the footer) dims for the
-          same reason. Closing the group (its own header is still rendered
-          and still clickable) brings everything back. */}
+          it is, every OTHER row (sibling groups and flat items alike) goes
+          invisible so full attention goes to the open submenu, and the
+          still-visible chrome above/below (the collapse toggle, the footer)
+          dims for the same reason. Deliberately `invisible`, not unmounted
+          or display:none: those hidden rows still occupy their layout
+          space, so the open group never shifts position -- unmounting them
+          would make the opened group slide up to fill the gap, which reads
+          as the rail jumping on every click. Closing the group (its own
+          header is still rendered and still clickable) brings everything
+          back. */}
       <div
         className="flex-1 min-h-0 flex flex-col gap-1 overflow-hidden"
         inert={(transitionMs > 0 && transitioning) || undefined}
       >
         {items.map((item) => {
           const groupOpen = hasSubmenu(item) && Boolean(expandedGroups[item.id]);
-          if (openGroupId && item.id !== openGroupId) return null;
+          const dimmed = openGroupId && item.id !== openGroupId;
 
-          if (!hasSubmenu(item)) return renderRow(item, false);
+          if (!hasSubmenu(item)) {
+            return (
+              <div
+                key={item.id}
+                className={cn('transition-opacity duration-150', dimmed && 'invisible')}
+              >
+                {renderRow(item, false)}
+              </div>
+            );
+          }
 
           const submenu = item.submenu ?? [];
           const groupActive = submenu.some((s) => s.active);
@@ -392,7 +406,10 @@ export function Sidebar({
           const GroupIcon = item.icon;
 
           return (
-            <div key={item.id} className="flex flex-col gap-0.5">
+            <div
+              key={item.id}
+              className={cn('flex flex-col gap-0.5 transition-opacity duration-150', dimmed && 'invisible')}
+            >
               <div className="relative">
                 <button
                   type="button"
