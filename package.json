@@ -1,8 +1,8 @@
 {
   "name": "spectra-lib",
-  "version": "0.13.0",
+  "version": "0.14.0",
   "private": true,
-  "description": "Aviv's personal shared library -- reusable components/tokens/utilities that span more than one project. Currently: GateOpen's design tokens, a cn() helper, a findUp() build-config utility, cv/portfolio's shared chrome.css/dom.js, and a Radix-based dashboard UI component set shared by GateOpen/bagStore/SpectraHub/Raptor2.",
+  "description": "Aviv's personal shared library -- reusable components/tokens/utilities that span more than one project. Currently: GateOpen's design tokens, a cn() helper, a findUp() build-config utility, cv/portfolio's shared chrome.css/dom.js, a Radix-based dashboard UI component set shared by GateOpen/bagStore/SpectraHub/Raptor2, and a GSAP scroll-reveal module (React + vanilla) shared by eliyaWebsite/spectra-website/portfolio-family sites.",
   "type": "module",
   "main": "dist/tokens.js",
   "types": "dist/tokens.d.ts",
@@ -27,6 +27,10 @@
       "types": "./dist/ui/index.d.ts",
       "default": "./dist/ui/index.js"
     },
+    "./reveal": {
+      "types": "./dist/reveal.d.ts",
+      "default": "./dist/reveal.js"
+    },
     "./styles/theme.css": "./styles/theme.css",
     "./styles/chrome.css": "./styles/chrome.css"
   },
@@ -43,6 +47,7 @@
   "peerDependencies": {
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
+    "gsap": "^3.13.0",
     "lucide-react": "^1.25.0",
     "radix-ui": "^1.6.2",
     "react": "^19.1.0",
@@ -55,6 +60,7 @@
     "@types/react-dom": "^19.1.0",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
+    "gsap": "^3.13.0",
     "lucide-react": "^1.25.0",
     "radix-ui": "^1.6.2",
     "react": "^19.1.0",
