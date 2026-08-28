@@ -1,12 +1,19 @@
 {
   "name": "spectra-lib",
-  "version": "0.15.0",
+  "version": "0.16.0",
   "private": true,
-  "description": "Aviv's personal shared library -- reusable components/tokens/utilities that span more than one project. Currently: GateOpen's design tokens, a cn() helper, a findUp() build-config utility, cv/portfolio's shared chrome.css/dom.js, a Radix-based dashboard UI component set shared by GateOpen/bagStore/SpectraHub/Raptor2, a GSAP scroll-reveal module (React + vanilla) shared by eliyaWebsite/spectra-website/portfolio-family sites, and a tech/brand icon set (React + vanilla) shared by spectra-website and cv.",
+  "description": "Aviv's personal shared library -- reusable components/tokens/utilities that span more than one project. Currently: GateOpen's design tokens, a cn() helper, a findUp() build-config utility, cv/portfolio's shared chrome.css/dom.js, a Radix-based dashboard UI component set shared by GateOpen/bagStore/SpectraHub/Raptor2, a GSAP scroll-reveal module (React + vanilla) shared by eliyaWebsite/spectra-website/portfolio-family sites, a tech/brand icon set (React + vanilla) shared by spectra-website and cv, and the spectra-ui UI-catalog scanner/CLI (Spectra Design Bridge, 2026-08-28).",
   "type": "module",
   "main": "dist/tokens.js",
   "types": "dist/tokens.d.ts",
+  "bin": {
+    "spectra-ui": "./bin/spectra-ui.mjs"
+  },
   "exports": {
+    "./ui-catalog": {
+      "types": "./dist/ui-catalog.d.ts",
+      "default": "./dist/ui-catalog.js"
+    },
     ".": {
       "types": "./dist/tokens.d.ts",
       "default": "./dist/tokens.js"
@@ -40,6 +47,7 @@
   },
   "files": [
     "dist",
+    "bin",
     "chrome",
     "styles",
     "docs"
@@ -47,6 +55,9 @@
   "scripts": {
     "build": "tsc",
     "prepare": "npm run build"
+  },
+  "dependencies": {
+    "yaml": "^2.6.1"
   },
   "peerDependencies": {
     "class-variance-authority": "^0.7.1",
