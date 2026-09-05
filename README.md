@@ -84,6 +84,20 @@ three projects' copies had drifted from GateOpen's by a pixel or two here and
 there before this existed — if that drift turns out to matter to a specific
 consumer, add a variant, don't re-fork the file.
 
+**Console primitives** (`Stepper`/`Step`, `JsonViewer`,
+`RequestResponsePanel`, `EvidenceTimeline`, `Spinner`, plus a `hint` on
+`Dropdown` options) joined the set 2026-09-05, extracted from
+spectra-comms-tester's hand-rolled `bits.jsx` and CardcomTester's
+walkthrough while designing spectra-service-tester — the unified
+Comms + Payments console that becomes the Spectra Hub prototype. They know
+nothing about deliveries, payments or profiles; they know the shapes every
+such console repeats (a sequence of steps with a first-class
+"unavailable" state, an HTTP exchange whose tone is derived from the
+status code, a structured value, a trail of observations, "busy"). See
+`docs/CONSOLE_PRIMITIVES.md`. They also brought the repo's first test
+runner: `npm test` (vitest + Testing Library, jsdom), with `*.test.jsx`
+files next to their components and excluded from the `tsc` build.
+
 More projects' reusable pieces land here over time, each in its own
 subpath/export as they're extracted — this file's job is to stay accurate
 to what's actually here, not to promise a shape in advance.

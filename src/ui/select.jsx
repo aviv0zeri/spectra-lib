@@ -96,8 +96,19 @@ function SelectLabel({ className, ...props }) {
   );
 }
 
-/** @param {React.ComponentProps<typeof SelectPrimitive.Item>} props */
-function SelectItem({ className, children, ...props }) {
+/**
+ * `hint` is a secondary line of text shown at the item's end (a count, a
+ * status, "no email capability") that must NOT become part of the selected
+ * value: Radix mirrors `ItemText` into the trigger's `SelectValue`, so the
+ * hint is rendered as a sibling of `ItemText`, never inside it. It sits
+ * before `ItemText` in the DOM (`order-1` pushes it visually after) so the
+ * `*:[span]:last:` layout rules below keep targeting `ItemText`'s span.
+ *
+ * @param {React.ComponentProps<typeof SelectPrimitive.Item> & {
+ *   hint?: import('react').ReactNode,
+ * }} props
+ */
+function SelectItem({ className, children, hint, ...props }) {
   return (
     <SelectPrimitive.Item
       data-slot="select-item"
@@ -127,6 +138,14 @@ function SelectItem({ className, children, ...props }) {
           <CheckIcon className="size-4 text-blue-600 dark:text-blue-400" />
         </SelectPrimitive.ItemIndicator>
       </span>
+      {hint ? (
+        <span
+          data-slot="select-item-hint"
+          className="order-1 ms-auto shrink-0 text-xs text-muted-foreground"
+        >
+          {hint}
+        </span>
+      ) : null}
       <SelectPrimitive.ItemText>{children}</SelectPrimitive.ItemText>
     </SelectPrimitive.Item>
   );

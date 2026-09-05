@@ -27,9 +27,13 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 const NONE_VALUE = '__none__';
 
 /**
+ * `hint` is an optional secondary label shown at the row's end inside the
+ * open list only — never in the trigger's selected value (see SelectItem).
+ *
  * @typedef {{
  *   value: string,
  *   label: string,
+ *   hint?: string,
  * }} DropdownOption
  */
 
@@ -103,6 +107,7 @@ export function Dropdown({
             key={opt.value || NONE_VALUE}
             value={opt.value || NONE_VALUE}
             className="rounded-none text-xs"
+            hint={opt.hint}
           >
             {opt.label}
           </SelectItem>
