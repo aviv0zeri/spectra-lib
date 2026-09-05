@@ -1,6 +1,6 @@
 {
   "name": "spectra-lib",
-  "version": "0.16.0",
+  "version": "0.17.0",
   "private": true,
   "description": "Aviv's personal shared library -- reusable components/tokens/utilities that span more than one project. Currently: GateOpen's design tokens, a cn() helper, a findUp() build-config utility, cv/portfolio's shared chrome.css/dom.js, a Radix-based dashboard UI component set shared by GateOpen/bagStore/SpectraHub/Raptor2, a GSAP scroll-reveal module (React + vanilla) shared by eliyaWebsite/spectra-website/portfolio-family sites, a tech/brand icon set (React + vanilla) shared by spectra-website and cv, and the spectra-ui UI-catalog scanner/CLI (Spectra Design Bridge, 2026-08-28).",
   "type": "module",
