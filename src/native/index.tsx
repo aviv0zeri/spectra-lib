@@ -257,6 +257,19 @@ const styles = StyleSheet.create({
     // A plain View's default alignItems is 'stretch'; without this the pill
     // would stretch to the full content width instead of staying a pill.
     alignSelf: 'center',
+    // The label is centered by the PILL, not by the label's own textAlign,
+    // and the pill has to be a row for that to work: Yoga applies minWidth
+    // on a container's CROSS axis only after its children are already
+    // placed, so in the default column layout a short label sits at the
+    // cross-start edge of a 160pt pill (left in LTR, right in RTL -- the
+    // "text isn't in the middle of the button" bug). With the width on the
+    // MAIN axis instead, minWidth is applied before justifyContent
+    // distributes the free space, so the label lands in the middle whatever
+    // its length, its writingDirection, or any width/textAlign a caller's
+    // actionTextStyle adds on top.
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   screenActionPressed: {
     opacity: 0.85,
@@ -265,6 +278,9 @@ const styles = StyleSheet.create({
   screenActionText: {
     fontWeight: '700',
     textAlign: 'center',
+    // Wrap a long localized label inside the pill (RN's default flexShrink is
+    // 0, which would let it push past the padding instead).
+    flexShrink: 1,
   },
   bannerContainer: {
     paddingHorizontal: 12,
