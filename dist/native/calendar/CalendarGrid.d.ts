@@ -75,6 +75,13 @@ export interface CalendarGridProps {
     };
     weekdayLabels: string[];
     todayLabel?: string;
+    /**
+     * Bump this whenever a slot's OUTPUT would change for the same day (new
+     * bookings, a tap flash, a holiday toggle) -- the list only re-renders its
+     * rows when this (or the month window) changes, exactly like the FlatList
+     * `extraData` it feeds. A value with stable identity between real changes.
+     */
+    extraData?: unknown;
     dayBackgroundColor?: DayStyleFn;
     dayRingStyle?: DayRingFn;
     isDayDisabled?: DayBoolFn;
@@ -96,5 +103,5 @@ export interface CalendarGridProps {
     gridRef?: ForwardedRef<CalendarGridHandle>;
     testID?: string;
 }
-export declare function CalendarGrid({ calendarType, layoutRTL, weekStartsOn, monthLabelStyle, t, colors, fontFamily, rowHeight, monthsBack, initialMonths, extendMonths, maxMonthsAhead, initialScrollTo, weekdayLabels, todayLabel, dayBackgroundColor, dayRingStyle, isDayDisabled, isDayMuted, renderDayBelow, renderDayCorner, renderDayBadge, renderWeekOverlay, onDayPress, onVisibleMonthChange, renderTitleAccessory, onTitlePress, footer, gridRef, testID, }: CalendarGridProps): import("react").JSX.Element;
+export declare function CalendarGrid({ calendarType, layoutRTL, weekStartsOn, monthLabelStyle, t, colors, fontFamily, rowHeight, monthsBack, initialMonths, extendMonths, maxMonthsAhead, initialScrollTo, weekdayLabels, todayLabel, extraData, dayBackgroundColor, dayRingStyle, isDayDisabled, isDayMuted, renderDayBelow, renderDayCorner, renderDayBadge, renderWeekOverlay, onDayPress, onVisibleMonthChange, renderTitleAccessory, onTitlePress, footer, gridRef, testID, }: CalendarGridProps): import("react").JSX.Element;
 export {};

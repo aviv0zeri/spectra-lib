@@ -148,5 +148,8 @@ const styles = StyleSheet.create({
 export { CalendarGrid } from './calendar/CalendarGrid';
 export { createCalendarSystem, computeDroppedWeeks } from './calendar/formations';
 export { getMonthGrid, getHebrewMonthGrid, localDayOrdinal, dateFromLocalDayOrdinal, DAY_MS, } from './calendar/grid';
-export { gregorianToHebrew, hebrewToGregorian, hebrewLeapYear, lastDayOfHebrewMonth, hebrewMonthsInOrder, hebrewMonthOrdinal, addHebrewMonths, hebrewMonthName, hebrewMonthKey, hebrewYearLetters, hebrewDayLetters, } from './calendar/hebrewDate';
+export { gregorianToHebrew, hebrewToGregorian, hebrewLeapYear, lastDayOfHebrewMonth, lastMonthOfHebrewYear, hebrewMonthsInOrder, hebrewMonthOrdinal, addHebrewMonths, hebrewMonthName, hebrewMonthKey, hebrewYearLetters, hebrewDayLetters, 
+// Lower-level R.D. primitives -- a consumer computing its own holiday dates
+// (GateOpen's israelHolidays engine) shares these rather than re-deriving.
+fixedFromHebrew, hebrewFromFixed, } from './calendar/hebrewDate';
 export { floorDiv, mod, gregorianLeapYear, fixedFromGregorian, gregorianFromFixed, gregorianYearFromFixed, } from './calendar/fixedDay';

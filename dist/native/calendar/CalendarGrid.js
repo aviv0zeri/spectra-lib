@@ -96,6 +96,11 @@ function MonthBlock({ page, system, rowHeight, weekStartsOn, layoutRTL, todayOrd
                             const ring = slots.dayRingStyle?.(day);
                             const disabled = slots.isDayDisabled?.(day) ?? false;
                             const muted = slots.isDayMuted?.(day) ?? false;
+                            // The consumer's below-the-number content (a holiday label,
+                            // say) WINS the one small subtitle slot: the cell has room for
+                            // one line, not two, so when it returns something the
+                            // formation's own sub-label / month marker steps aside.
+                            const below = slots.renderDayBelow?.(day);
                             return (_jsx(Pressable, { disabled: disabled, onPress: slots.onDayPress ? () => slots.onDayPress?.(day) : undefined, accessibilityLabel: [
                                     day.bigLabel,
                                     day.bigLabel === String(day.gregorianDayNum) ? null : String(day.gregorianDayNum),
@@ -123,7 +128,7 @@ function MonthBlock({ page, system, rowHeight, weekStartsOn, layoutRTL, todayOrd
                                                         fontFamily,
                                                         color: day.isToday ? TODAY_ON_FILL : muted ? colors.muted : colors.text,
                                                         fontVariant: ['tabular-nums'],
-                                                    }, children: day.bigLabel })] }), day.subLabel != null || day.monthMarker != null ? (_jsx(Text, { numberOfLines: 1, style: {
+                                                    }, children: day.bigLabel })] }), below != null ? (below) : day.subLabel != null || day.monthMarker != null ? (_jsx(Text, { numberOfLines: 1, style: {
                                                 textAlign: 'center',
                                                 marginTop: 1,
                                                 fontSize: 10,
@@ -131,7 +136,7 @@ function MonthBlock({ page, system, rowHeight, weekStartsOn, layoutRTL, todayOrd
                                                 color: colors.muted,
                                                 fontFamily,
                                                 fontVariant: ['tabular-nums'],
-                                            }, children: day.subLabel ?? day.monthMarker })) : null, slots.renderDayBelow?.(day), slots.renderDayCorner ? (_jsx(View, { pointerEvents: "none", style: [
+                                            }, children: day.subLabel ?? day.monthMarker })) : null, slots.renderDayCorner ? (_jsx(View, { pointerEvents: "none", style: [
                                                 { position: 'absolute', top: 3 },
                                                 layoutRTL ? { right: 3 } : { left: 3 },
                                             ], children: slots.renderDayCorner(day) })) : null, slots.renderDayBadge ? (_jsx(View, { pointerEvents: "none", style: [
@@ -175,7 +180,7 @@ function TodayDisc() {
             opacity,
         } }));
 }
-export function CalendarGrid({ calendarType, layoutRTL, weekStartsOn, monthLabelStyle = 'name', t, colors, fontFamily, rowHeight, monthsBack = 12, initialMonths = 12, extendMonths = 12, maxMonthsAhead = 24, initialScrollTo = 'today', weekdayLabels, todayLabel, dayBackgroundColor, dayRingStyle, isDayDisabled, isDayMuted, renderDayBelow, renderDayCorner, renderDayBadge, renderWeekOverlay, onDayPress, onVisibleMonthChange, renderTitleAccessory, onTitlePress, footer, gridRef, testID, }) {
+export function CalendarGrid({ calendarType, layoutRTL, weekStartsOn, monthLabelStyle = 'name', t, colors, fontFamily, rowHeight, monthsBack = 12, initialMonths = 12, extendMonths = 12, maxMonthsAhead = 24, initialScrollTo = 'today', weekdayLabels, todayLabel, extraData, dayBackgroundColor, dayRingStyle, isDayDisabled, isDayMuted, renderDayBelow, renderDayCorner, renderDayBadge, renderWeekOverlay, onDayPress, onVisibleMonthChange, renderTitleAccessory, onTitlePress, footer, gridRef, testID, }) {
     const system = useMemo(() => createCalendarSystem({ type: calendarType, layoutRTL, monthLabelStyle, t }), [calendarType, layoutRTL, monthLabelStyle, t]);
     const [anchorOrd, setAnchorOrd] = useState(() => localDayOrdinal(new Date()));
     const anchorOrdRef = useRef(anchorOrd);
@@ -328,7 +333,12 @@ export function CalendarGrid({ calendarType, layoutRTL, weekStartsOn, monthLabel
         if (visiblePage)
             onVisibleMonthChange?.(visiblePage);
     }, [visiblePage, onVisibleMonthChange]);
-    const slots = {
+    // The slots are fresh closures every render; a stable renderItem reads the
+    // latest set through this ref so it never captures a stale one, and the
+    // FlatList re-renders its rows off `listExtra` (the month window + the
+    // consumer's extraData) rather than off the slot identities.
+    const slotsRef = useRef({});
+    slotsRef.current = {
         dayBackgroundColor,
         dayRingStyle,
         isDayDisabled,
@@ -339,9 +349,8 @@ export function CalendarGrid({ calendarType, layoutRTL, weekStartsOn, monthLabel
         renderWeekOverlay,
         onDayPress,
     };
-    const renderItem = useCallback(({ item }) => (_jsx(MonthBlock, { page: item, system: system, rowHeight: rowHeight, weekStartsOn: weekStartsOn, layoutRTL: layoutRTL, todayOrd: anchorOrd, colors: colors, fontFamily: fontFamily, slots: slots })), 
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- slots is a fresh object each render by design; extraData drives updates
-    [system, rowHeight, weekStartsOn, layoutRTL, anchorOrd, colors, fontFamily]);
+    const listExtra = useMemo(() => ({ anchorOrd, extraData }), [anchorOrd, extraData]);
+    const renderItem = useCallback(({ item }) => (_jsx(MonthBlock, { page: item, system: system, rowHeight: rowHeight, weekStartsOn: weekStartsOn, layoutRTL: layoutRTL, todayOrd: anchorOrd, colors: colors, fontFamily: fontFamily, slots: slotsRef.current })), [system, rowHeight, weekStartsOn, layoutRTL, anchorOrd, colors, fontFamily]);
     const weekdayOrder = Array.from({ length: 7 }, (_, i) => (weekStartsOn + i) % 7);
     return (_jsxs(View, { style: { flex: 1 }, testID: testID, children: [_jsxs(Pressable, { onPress: onTitlePress, disabled: !onTitlePress, accessibilityRole: onTitlePress ? 'button' : undefined, style: {
                     paddingHorizontal: 16,
@@ -365,7 +374,7 @@ export function CalendarGrid({ calendarType, layoutRTL, weekStartsOn, monthLabel
                                 textAlign: 'center',
                             }, children: weekdayLabels[wd] }) }, wd))) }) }), _jsx(FlatList, { ref: listRef, style: { flex: 1 }, data: months, keyExtractor: (m) => m.key, renderItem: renderItem, getItemLayout: getItemLayout, initialScrollIndex: initialIndex, snapToOffsets: snapOffsets, disableIntervalMomentum: true, decelerationRate: "fast", onLayout: (e) => {
                     listHeightRef.current = e.nativeEvent.layout.height;
-                }, onEndReached: () => setMonthCount((n) => Math.min(maxMonthsAhead, n + extendMonths)), onEndReachedThreshold: 2, onScroll: onScroll, scrollEventThrottle: 32, extraData: anchorOrd, contentContainerStyle: { paddingTop: LIST_TOP_PAD, paddingHorizontal: 8, paddingBottom: 90 }, showsVerticalScrollIndicator: false }), footer, showTodayPill && todayLabel ? (_jsx(View, { pointerEvents: "box-none", style: {
+                }, onEndReached: () => setMonthCount((n) => Math.min(maxMonthsAhead, n + extendMonths)), onEndReachedThreshold: 2, onScroll: onScroll, scrollEventThrottle: 32, extraData: listExtra, contentContainerStyle: { paddingTop: LIST_TOP_PAD, paddingHorizontal: 8, paddingBottom: 90 }, showsVerticalScrollIndicator: false }), footer, showTodayPill && todayLabel ? (_jsx(View, { pointerEvents: "box-none", style: {
                     position: 'absolute',
                     bottom: footer ? 52 : 18,
                     left: 0,

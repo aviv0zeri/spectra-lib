@@ -110,6 +110,6 @@ export { createCalendarSystem, computeDroppedWeeks } from './calendar/formations
 export type { CalendarType, CalendarSystem, MonthPage, DayLabels } from './calendar/formations';
 export { getMonthGrid, getHebrewMonthGrid, localDayOrdinal, dateFromLocalDayOrdinal, DAY_MS, } from './calendar/grid';
 export type { MonthGrid, HebrewMonthGrid } from './calendar/grid';
-export { gregorianToHebrew, hebrewToGregorian, hebrewLeapYear, lastDayOfHebrewMonth, hebrewMonthsInOrder, hebrewMonthOrdinal, addHebrewMonths, hebrewMonthName, hebrewMonthKey, hebrewYearLetters, hebrewDayLetters, } from './calendar/hebrewDate';
+export { gregorianToHebrew, hebrewToGregorian, hebrewLeapYear, lastDayOfHebrewMonth, lastMonthOfHebrewYear, hebrewMonthsInOrder, hebrewMonthOrdinal, addHebrewMonths, hebrewMonthName, hebrewMonthKey, hebrewYearLetters, hebrewDayLetters, fixedFromHebrew, hebrewFromFixed, } from './calendar/hebrewDate';
 export type { HebrewDate } from './calendar/hebrewDate';
 export { floorDiv, mod, gregorianLeapYear, fixedFromGregorian, gregorianFromFixed, gregorianYearFromFixed, } from './calendar/fixedDay';

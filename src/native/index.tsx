@@ -332,6 +332,7 @@ export {
   hebrewToGregorian,
   hebrewLeapYear,
   lastDayOfHebrewMonth,
+  lastMonthOfHebrewYear,
   hebrewMonthsInOrder,
   hebrewMonthOrdinal,
   addHebrewMonths,
@@ -339,6 +340,10 @@ export {
   hebrewMonthKey,
   hebrewYearLetters,
   hebrewDayLetters,
+  // Lower-level R.D. primitives -- a consumer computing its own holiday dates
+  // (GateOpen's israelHolidays engine) shares these rather than re-deriving.
+  fixedFromHebrew,
+  hebrewFromFixed,
 } from './calendar/hebrewDate';
 export type { HebrewDate } from './calendar/hebrewDate';
 export {

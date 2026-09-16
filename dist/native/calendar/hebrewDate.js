@@ -25,7 +25,7 @@ const ADAR_II = 13;
 export function hebrewLeapYear(year) {
     return mod(7 * year + 1, 19) < 7;
 }
-function lastMonthOfHebrewYear(year) {
+export function lastMonthOfHebrewYear(year) {
     return hebrewLeapYear(year) ? ADAR_II : ADAR;
 }
 /**
@@ -117,7 +117,7 @@ export function addHebrewMonths(year, month, delta) {
     return { year: y, month: hebrewMonthsInOrder(y)[idx] };
 }
 /** Fixed day of a Hebrew date. @param month 1..13, Nisan-based */
-function fixedFromHebrew(year, month, day) {
+export function fixedFromHebrew(year, month, day) {
     let fixed = hebrewNewYear(year) + day - 1;
     if (month < TISHREI) {
         const last = lastMonthOfHebrewYear(year);
@@ -133,7 +133,7 @@ function fixedFromHebrew(year, month, day) {
     return fixed;
 }
 /** Hebrew date of a fixed day. */
-function hebrewFromFixed(fixed) {
+export function hebrewFromFixed(fixed) {
     const approx = floorDiv((fixed - HEBREW_EPOCH) * 98496, 35975351) + 1;
     let year = approx - 1;
     while (hebrewNewYear(year + 1) <= fixed)

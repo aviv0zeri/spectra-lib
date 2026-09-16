@@ -108,6 +108,13 @@ export interface CalendarGridProps {
   initialScrollTo?: 'today' | { gregorian: { year: number; month0: number } } | { pageKey: string };
   weekdayLabels: string[];
   todayLabel?: string;
+  /**
+   * Bump this whenever a slot's OUTPUT would change for the same day (new
+   * bookings, a tap flash, a holiday toggle) -- the list only re-renders its
+   * rows when this (or the month window) changes, exactly like the FlatList
+   * `extraData` it feeds. A value with stable identity between real changes.
+   */
+  extraData?: unknown;
 
   dayBackgroundColor?: DayStyleFn;
   dayRingStyle?: DayRingFn;
@@ -268,6 +275,11 @@ function MonthBlock({
                 const ring = slots.dayRingStyle?.(day);
                 const disabled = slots.isDayDisabled?.(day) ?? false;
                 const muted = slots.isDayMuted?.(day) ?? false;
+                // The consumer's below-the-number content (a holiday label,
+                // say) WINS the one small subtitle slot: the cell has room for
+                // one line, not two, so when it returns something the
+                // formation's own sub-label / month marker steps aside.
+                const below = slots.renderDayBelow?.(day);
                 return (
                   <Pressable
                     key={col}
@@ -316,7 +328,9 @@ function MonthBlock({
                           {day.bigLabel}
                         </Text>
                       </View>
-                      {day.subLabel != null || day.monthMarker != null ? (
+                      {below != null ? (
+                        below
+                      ) : day.subLabel != null || day.monthMarker != null ? (
                         <Text
                           numberOfLines={1}
                           style={{
@@ -332,7 +346,6 @@ function MonthBlock({
                           {day.subLabel ?? day.monthMarker}
                         </Text>
                       ) : null}
-                      {slots.renderDayBelow?.(day)}
                       {slots.renderDayCorner ? (
                         <View
                           pointerEvents="none"
@@ -430,6 +443,7 @@ export function CalendarGrid({
   initialScrollTo = 'today',
   weekdayLabels,
   todayLabel,
+  extraData,
   dayBackgroundColor,
   dayRingStyle,
   isDayDisabled,
@@ -640,7 +654,12 @@ export function CalendarGrid({
     if (visiblePage) onVisibleMonthChange?.(visiblePage);
   }, [visiblePage, onVisibleMonthChange]);
 
-  const slots = {
+  // The slots are fresh closures every render; a stable renderItem reads the
+  // latest set through this ref so it never captures a stale one, and the
+  // FlatList re-renders its rows off `listExtra` (the month window + the
+  // consumer's extraData) rather than off the slot identities.
+  const slotsRef = useRef<Parameters<typeof MonthBlock>[0]['slots']>({});
+  slotsRef.current = {
     dayBackgroundColor,
     dayRingStyle,
     isDayDisabled,
@@ -651,6 +670,7 @@ export function CalendarGrid({
     renderWeekOverlay,
     onDayPress,
   };
+  const listExtra = useMemo(() => ({ anchorOrd, extraData }), [anchorOrd, extraData]);
   const renderItem = useCallback(
     ({ item }: { item: MonthPage }) => (
       <MonthBlock
@@ -662,10 +682,9 @@ export function CalendarGrid({
         todayOrd={anchorOrd}
         colors={colors}
         fontFamily={fontFamily}
-        slots={slots}
+        slots={slotsRef.current}
       />
     ),
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- slots is a fresh object each render by design; extraData drives updates
     [system, rowHeight, weekStartsOn, layoutRTL, anchorOrd, colors, fontFamily],
   );
 
@@ -741,7 +760,7 @@ export function CalendarGrid({
         onEndReachedThreshold={2}
         onScroll={onScroll}
         scrollEventThrottle={32}
-        extraData={anchorOrd}
+        extraData={listExtra}
         contentContainerStyle={{ paddingTop: LIST_TOP_PAD, paddingHorizontal: 8, paddingBottom: 90 }}
         showsVerticalScrollIndicator={false}
       />

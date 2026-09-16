@@ -14,6 +14,7 @@ export declare const ADAR = 12;
  * cycle; `(7y + 1) mod 19 < 7` is the closed form of that pattern.
  */
 export declare function hebrewLeapYear(year: number): boolean;
+export declare function lastMonthOfHebrewYear(year: number): number;
 /**
  * Length of a Hebrew month. Cheshvan and Kislev flex with the year length;
  * Adar has 29 days except as Adar I of a leap year, where it has 30.
@@ -41,6 +42,10 @@ export declare function addHebrewMonths(year: number, month: number, delta: numb
     year: number;
     month: number;
 };
+/** Fixed day of a Hebrew date. @param month 1..13, Nisan-based */
+export declare function fixedFromHebrew(year: number, month: number, day: number): number;
+/** Hebrew date of a fixed day. */
+export declare function hebrewFromFixed(fixed: number): HebrewDate;
 /** Hebrew date of a JS Date (read in local time, matching the calendar grid). */
 export declare function gregorianToHebrew(date: Date): HebrewDate;
 /** Local-midnight JS Date of a Hebrew date. @param month 1..13, Nisan-based */
