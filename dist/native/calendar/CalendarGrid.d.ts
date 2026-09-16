@@ -1,4 +1,5 @@
 import type { ForwardedRef, ReactNode } from 'react';
+import { Animated } from 'react-native';
 import type { StyleProp, ViewStyle } from 'react-native';
 import { type CalendarType, type MonthPage } from './formations';
 /** The caller's theme, read verbatim -- same no-defaults convention as StatusColors. */
@@ -109,6 +110,29 @@ export interface CalendarGridProps {
      * long scroll feel slow, one month per flick.
      */
     snapToMonths?: boolean;
+    /**
+     * The list's content offset (y), driven on the UI thread straight from the
+     * native scroll event -- hand in an Animated.Value to move something in
+     * step with the scroll with no JS work per tick (a scrubber's "you are
+     * here" knob, say). Seeded with the opening offset.
+     */
+    scrollY?: Animated.Value;
+    /**
+     * Every loaded month's block offset + height in the list's content, in
+     * month order, whenever the layout changes -- the other half of `scrollY`:
+     * lets a consumer map an offset to a month and a fraction through it.
+     */
+    onMonthLayout?: (blocks: {
+        key: string;
+        offset: number;
+        height: number;
+    }[]) => void;
+    /**
+     * Extra inset on the reading-END edge (right in LTR, left in RTL) of the
+     * weekday header and every week row: a gutter for something the consumer
+     * overlays on that edge (a scrubber rail) so it never covers a day.
+     */
+    endInset?: number;
     /** Small accessory beside the month title (a "future month has a booking" dot, say). */
     renderTitleAccessory?: (page: MonthPage) => ReactNode;
     /** Tapping the title / its chevron -- the consumer opens its own month picker. */
@@ -117,5 +141,5 @@ export interface CalendarGridProps {
     gridRef?: ForwardedRef<CalendarGridHandle>;
     testID?: string;
 }
-export declare function CalendarGrid({ calendarType, layoutRTL, weekStartsOn, monthLabelStyle, t, colors, fontFamily, rowHeight, monthsBack, initialMonths, extendMonths, maxMonthsAhead, initialScrollTo, weekdayLabels, todayLabel, extraData, dayBackgroundColor, dayRingStyle, isDayDisabled, isDayMuted, renderDayBelow, renderDayCorner, renderDayBadge, renderWeekOverlay, onDayPress, onVisibleMonthChange, onTopOrdinalChange, snapToMonths, renderTitleAccessory, onTitlePress, footer, gridRef, testID, }: CalendarGridProps): import("react").JSX.Element;
+export declare function CalendarGrid({ calendarType, layoutRTL, weekStartsOn, monthLabelStyle, t, colors, fontFamily, rowHeight, monthsBack, initialMonths, extendMonths, maxMonthsAhead, initialScrollTo, weekdayLabels, todayLabel, extraData, dayBackgroundColor, dayRingStyle, isDayDisabled, isDayMuted, renderDayBelow, renderDayCorner, renderDayBadge, renderWeekOverlay, onDayPress, onVisibleMonthChange, onTopOrdinalChange, snapToMonths, scrollY, onMonthLayout, endInset, renderTitleAccessory, onTitlePress, footer, gridRef, testID, }: CalendarGridProps): import("react").JSX.Element;
 export {};

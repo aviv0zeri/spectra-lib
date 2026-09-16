@@ -14,7 +14,7 @@ import { jsx as _jsx, jsxs as _jsxs } from "react/jsx-runtime";
 // ported from GateOpen's BookingsCalendarScreen so the feel is identical; the
 // booking-specific parts that used to be tangled into it are now the slots.
 import { useCallback, useEffect, useImperativeHandle, useMemo, useRef, useState } from 'react';
-import { Animated, AppState, Easing, FlatList, Pressable, StyleSheet, Text, View, } from 'react-native';
+import { Animated, AppState, Easing, Pressable, StyleSheet, Text, View, } from 'react-native';
 import { computeDroppedWeeks, createCalendarSystem, dateFromLocalDayOrdinal, localDayOrdinal, } from './formations';
 // Fixed marks -- semantic constants, not theme palette, so they keep their
 // meaning across every consumer's colours (same red the app's other "today"
@@ -186,7 +186,7 @@ function TodayDisc() {
             opacity,
         } }));
 }
-export function CalendarGrid({ calendarType, layoutRTL, weekStartsOn, monthLabelStyle = 'name', t, colors, fontFamily, rowHeight, monthsBack = 12, initialMonths = 12, extendMonths = 12, maxMonthsAhead = 24, initialScrollTo = 'today', weekdayLabels, todayLabel, extraData, dayBackgroundColor, dayRingStyle, isDayDisabled, isDayMuted, renderDayBelow, renderDayCorner, renderDayBadge, renderWeekOverlay, onDayPress, onVisibleMonthChange, onTopOrdinalChange, snapToMonths = false, renderTitleAccessory, onTitlePress, footer, gridRef, testID, }) {
+export function CalendarGrid({ calendarType, layoutRTL, weekStartsOn, monthLabelStyle = 'name', t, colors, fontFamily, rowHeight, monthsBack = 12, initialMonths = 12, extendMonths = 12, maxMonthsAhead = 24, initialScrollTo = 'today', weekdayLabels, todayLabel, extraData, dayBackgroundColor, dayRingStyle, isDayDisabled, isDayMuted, renderDayBelow, renderDayCorner, renderDayBadge, renderWeekOverlay, onDayPress, onVisibleMonthChange, onTopOrdinalChange, snapToMonths = false, scrollY, onMonthLayout, endInset = 0, renderTitleAccessory, onTitlePress, footer, gridRef, testID, }) {
     const system = useMemo(() => createCalendarSystem({ type: calendarType, layoutRTL, monthLabelStyle, t }), [calendarType, layoutRTL, monthLabelStyle, t]);
     const [anchorOrd, setAnchorOrd] = useState(() => localDayOrdinal(new Date()));
     const anchorOrdRef = useRef(anchorOrd);
@@ -205,6 +205,15 @@ export function CalendarGrid({ calendarType, layoutRTL, weekStartsOn, monthLabel
         return out;
     }, [months, rowHeight]);
     const snapOffsets = useMemo(() => (snapToMonths ? layoutTable.map((l) => l.offset) : undefined), [layoutTable, snapToMonths]);
+    useEffect(() => {
+        if (!onMonthLayout)
+            return;
+        onMonthLayout(months.map((m, i) => ({
+            key: m.key,
+            offset: layoutTable[i].offset,
+            height: layoutTable[i].height,
+        })));
+    }, [months, layoutTable, onMonthLayout]);
     const listRef = useRef(null);
     const listHeightRef = useRef(0);
     const scrollOffsetRef = useRef(0);
@@ -274,6 +283,14 @@ export function CalendarGrid({ calendarType, layoutRTL, weekStartsOn, monthLabel
             }
         }
     }, [layoutTable, monthsBack, syncVisibleMonth, onTopOrdinalChange, topOrdinalAt]);
+    // With a consumer's scrollY: the native event feeds it on the UI thread and
+    // the JS handler above rides along as its listener.
+    const scrollHandler = useMemo(() => scrollY
+        ? Animated.event([{ nativeEvent: { contentOffset: { y: scrollY } } }], {
+            useNativeDriver: true,
+            listener: onScroll,
+        })
+        : onScroll, [scrollY, onScroll]);
     // Rollover: re-check "today" on foreground + on an interval, sliding the
     // window and compensating the scroll for whatever month dropped off the
     // front so the view doesn't jump.
@@ -300,6 +317,7 @@ export function CalendarGrid({ calendarType, layoutRTL, weekStartsOn, monthLabel
     }, [checkRollover]);
     useEffect(() => {
         scrollOffsetRef.current = layoutTable[initialIndex]?.offset || 0;
+        scrollY?.setValue(scrollOffsetRef.current);
         // eslint-disable-next-line react-hooks/exhaustive-deps -- mount only
     }, []);
     // Compensate the offset for a dropped-off-front month after a rollover.
@@ -340,6 +358,9 @@ export function CalendarGrid({ calendarType, layoutRTL, weekStartsOn, monthLabel
         const target = layoutTable[arrayIndex];
         if (!target)
             return;
+        // A newer in-window pick supersedes a queued out-of-window one --
+        // otherwise the extension's effect yanks the list to that far month.
+        pendingScrollFlatRef.current = null;
         scrollOffsetRef.current = target.offset;
         syncVisibleMonth(target.offset);
         // The target is already laid out (its offset came from the live table),
@@ -401,15 +422,25 @@ export function CalendarGrid({ calendarType, layoutRTL, weekStartsOn, monthLabel
                             fontFamily,
                             textAlign: layoutRTL ? 'right' : 'left',
                             writingDirection: layoutRTL ? 'rtl' : 'ltr',
-                        }, children: visiblePage ? system.title(visiblePage) : '' }), onTitlePress ? _jsx(Chevron, { color: colors.muted }) : null, visiblePage ? renderTitleAccessory?.(visiblePage) : null] }), _jsx(View, { style: { paddingHorizontal: 16, marginTop: 10, marginBottom: 4 }, children: _jsx(View, { style: { flexDirection: 'row', direction: layoutRTL ? 'rtl' : 'ltr' }, children: weekdayOrder.map((wd) => (_jsx(View, { style: { flex: 1, alignItems: 'center' }, children: _jsx(Text, { style: {
+                        }, children: visiblePage ? system.title(visiblePage) : '' }), onTitlePress ? _jsx(Chevron, { color: colors.muted }) : null, visiblePage ? renderTitleAccessory?.(visiblePage) : null] }), _jsx(View, { style: {
+                    paddingLeft: 16 + (layoutRTL ? endInset : 0),
+                    paddingRight: 16 + (layoutRTL ? 0 : endInset),
+                    marginTop: 10,
+                    marginBottom: 4,
+                }, children: _jsx(View, { style: { flexDirection: 'row', direction: layoutRTL ? 'rtl' : 'ltr' }, children: weekdayOrder.map((wd) => (_jsx(View, { style: { flex: 1, alignItems: 'center' }, children: _jsx(Text, { style: {
                                 color: colors.text,
                                 fontSize: 13,
                                 fontWeight: '700',
                                 fontFamily,
                                 textAlign: 'center',
-                            }, children: weekdayLabels[wd] }) }, wd))) }) }), _jsx(FlatList, { ref: listRef, style: { flex: 1 }, data: months, keyExtractor: (m) => m.key, renderItem: renderItem, getItemLayout: getItemLayout, initialScrollIndex: initialIndex, snapToOffsets: snapOffsets, disableIntervalMomentum: snapToMonths, decelerationRate: snapToMonths ? 'fast' : 'normal', onLayout: (e) => {
+                            }, children: weekdayLabels[wd] }) }, wd))) }) }), _jsx(Animated.FlatList, { ref: listRef, style: { flex: 1 }, data: months, keyExtractor: (m) => m.key, renderItem: renderItem, getItemLayout: getItemLayout, initialScrollIndex: initialIndex, snapToOffsets: snapOffsets, disableIntervalMomentum: snapToMonths, decelerationRate: snapToMonths ? 'fast' : 'normal', onLayout: (e) => {
                     listHeightRef.current = e.nativeEvent.layout.height;
-                }, onEndReached: () => setMonthCount((n) => Math.min(maxMonthsAhead, n + extendMonths)), onEndReachedThreshold: 2, onScroll: onScroll, scrollEventThrottle: 32, extraData: listExtra, contentContainerStyle: { paddingTop: LIST_TOP_PAD, paddingHorizontal: 8, paddingBottom: 90 }, showsVerticalScrollIndicator: false }), footer, showTodayPill && todayLabel ? (_jsx(View, { pointerEvents: "box-none", style: {
+                }, onEndReached: () => setMonthCount((n) => Math.min(maxMonthsAhead, n + extendMonths)), onEndReachedThreshold: 2, onScroll: scrollHandler, scrollEventThrottle: 16, extraData: listExtra, contentContainerStyle: {
+                    paddingTop: LIST_TOP_PAD,
+                    paddingLeft: 8 + (layoutRTL ? endInset : 0),
+                    paddingRight: 8 + (layoutRTL ? 0 : endInset),
+                    paddingBottom: 90,
+                }, showsVerticalScrollIndicator: false }), footer, showTodayPill && todayLabel ? (_jsx(View, { pointerEvents: "box-none", style: {
                     position: 'absolute',
                     bottom: footer ? 52 : 18,
                     left: 0,

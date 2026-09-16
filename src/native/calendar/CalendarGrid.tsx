@@ -143,6 +143,25 @@ export interface CalendarGridProps {
    * long scroll feel slow, one month per flick.
    */
   snapToMonths?: boolean;
+  /**
+   * The list's content offset (y), driven on the UI thread straight from the
+   * native scroll event -- hand in an Animated.Value to move something in
+   * step with the scroll with no JS work per tick (a scrubber's "you are
+   * here" knob, say). Seeded with the opening offset.
+   */
+  scrollY?: Animated.Value;
+  /**
+   * Every loaded month's block offset + height in the list's content, in
+   * month order, whenever the layout changes -- the other half of `scrollY`:
+   * lets a consumer map an offset to a month and a fraction through it.
+   */
+  onMonthLayout?: (blocks: { key: string; offset: number; height: number }[]) => void;
+  /**
+   * Extra inset on the reading-END edge (right in LTR, left in RTL) of the
+   * weekday header and every week row: a gutter for something the consumer
+   * overlays on that edge (a scrubber rail) so it never covers a day.
+   */
+  endInset?: number;
   /** Small accessory beside the month title (a "future month has a booking" dot, say). */
   renderTitleAccessory?: (page: MonthPage) => ReactNode;
   /** Tapping the title / its chevron -- the consumer opens its own month picker. */
@@ -476,6 +495,9 @@ export function CalendarGrid({
   onVisibleMonthChange,
   onTopOrdinalChange,
   snapToMonths = false,
+  scrollY,
+  onMonthLayout,
+  endInset = 0,
   renderTitleAccessory,
   onTitlePress,
   footer,
@@ -512,6 +534,16 @@ export function CalendarGrid({
     () => (snapToMonths ? layoutTable.map((l) => l.offset) : undefined),
     [layoutTable, snapToMonths],
   );
+  useEffect(() => {
+    if (!onMonthLayout) return;
+    onMonthLayout(
+      months.map((m, i) => ({
+        key: m.key,
+        offset: layoutTable[i].offset,
+        height: layoutTable[i].height,
+      })),
+    );
+  }, [months, layoutTable, onMonthLayout]);
 
   const listRef = useRef<FlatList<MonthPage> | null>(null);
   const listHeightRef = useRef(0);
@@ -599,6 +631,18 @@ export function CalendarGrid({
     },
     [layoutTable, monthsBack, syncVisibleMonth, onTopOrdinalChange, topOrdinalAt],
   );
+  // With a consumer's scrollY: the native event feeds it on the UI thread and
+  // the JS handler above rides along as its listener.
+  const scrollHandler = useMemo(
+    () =>
+      scrollY
+        ? Animated.event([{ nativeEvent: { contentOffset: { y: scrollY } } }], {
+            useNativeDriver: true,
+            listener: onScroll,
+          })
+        : onScroll,
+    [scrollY, onScroll],
+  );
 
   // Rollover: re-check "today" on foreground + on an interval, sliding the
   // window and compensating the scroll for whatever month dropped off the
@@ -625,6 +669,7 @@ export function CalendarGrid({
 
   useEffect(() => {
     scrollOffsetRef.current = layoutTable[initialIndex]?.offset || 0;
+    scrollY?.setValue(scrollOffsetRef.current);
     // eslint-disable-next-line react-hooks/exhaustive-deps -- mount only
   }, []);
 
@@ -666,6 +711,9 @@ export function CalendarGrid({
       }
       const target = layoutTable[arrayIndex];
       if (!target) return;
+      // A newer in-window pick supersedes a queued out-of-window one --
+      // otherwise the extension's effect yanks the list to that far month.
+      pendingScrollFlatRef.current = null;
       scrollOffsetRef.current = target.offset;
       syncVisibleMonth(target.offset);
       // The target is already laid out (its offset came from the live table),
@@ -779,7 +827,14 @@ export function CalendarGrid({
         {visiblePage ? renderTitleAccessory?.(visiblePage) : null}
       </Pressable>
 
-      <View style={{ paddingHorizontal: 16, marginTop: 10, marginBottom: 4 }}>
+      <View
+        style={{
+          paddingLeft: 16 + (layoutRTL ? endInset : 0),
+          paddingRight: 16 + (layoutRTL ? 0 : endInset),
+          marginTop: 10,
+          marginBottom: 4,
+        }}
+      >
         <View style={{ flexDirection: 'row', direction: layoutRTL ? 'rtl' : 'ltr' }}>
           {weekdayOrder.map((wd) => (
             <View key={wd} style={{ flex: 1, alignItems: 'center' }}>
@@ -799,7 +854,7 @@ export function CalendarGrid({
         </View>
       </View>
 
-      <FlatList
+      <Animated.FlatList
         ref={listRef}
         style={{ flex: 1 }}
         data={months}
@@ -815,10 +870,15 @@ export function CalendarGrid({
         }}
         onEndReached={() => setMonthCount((n) => Math.min(maxMonthsAhead, n + extendMonths))}
         onEndReachedThreshold={2}
-        onScroll={onScroll}
-        scrollEventThrottle={32}
+        onScroll={scrollHandler}
+        scrollEventThrottle={16}
         extraData={listExtra}
-        contentContainerStyle={{ paddingTop: LIST_TOP_PAD, paddingHorizontal: 8, paddingBottom: 90 }}
+        contentContainerStyle={{
+          paddingTop: LIST_TOP_PAD,
+          paddingLeft: 8 + (layoutRTL ? endInset : 0),
+          paddingRight: 8 + (layoutRTL ? 0 : endInset),
+          paddingBottom: 90,
+        }}
         showsVerticalScrollIndicator={false}
       />
 
