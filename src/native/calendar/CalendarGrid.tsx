@@ -129,6 +129,13 @@ export interface CalendarGridProps {
   renderWeekOverlay?: (page: MonthPage, weekIndex: number, rowHeight: number) => ReactNode;
   onDayPress?: (day: CalendarDay) => void;
   onVisibleMonthChange?: (page: MonthPage) => void;
+  /**
+   * The day ordinal of the topmost visible week row, reported on every scroll
+   * tick it changes -- lets a consumer feel its own content go by (a haptic
+   * as a booking's first night crosses the top of the view, say) at DAY
+   * granularity, finer than onVisibleMonthChange's month.
+   */
+  onTopOrdinalChange?: (ord: number) => void;
   /** Small accessory beside the month title (a "future month has a booking" dot, say). */
   renderTitleAccessory?: (page: MonthPage) => ReactNode;
   /** Tapping the title / its chevron -- the consumer opens its own month picker. */
@@ -460,6 +467,7 @@ export function CalendarGrid({
   renderWeekOverlay,
   onDayPress,
   onVisibleMonthChange,
+  onTopOrdinalChange,
   renderTitleAccessory,
   onTitlePress,
   footer,
@@ -536,6 +544,30 @@ export function CalendarGrid({
 
   const [showTodayPill, setShowTodayPill] = useState(false);
   const awayRef = useRef(false);
+  const topOrdRef = useRef<number | null>(null);
+
+  // The day ordinal of the first day in the topmost visible week row: find
+  // the month block under the top edge, then the week row inside it. A
+  // leading filler row clamps to the month's own first day.
+  const topOrdinalAt = useCallback(
+    (y: number): number | null => {
+      let idx = 0;
+      for (let i = 0; i < layoutTable.length; i++) {
+        if (layoutTable[i].offset > y) break;
+        idx = i;
+      }
+      const page = months[idx];
+      const block = layoutTable[idx];
+      if (!page || !block) return null;
+      const inner = y - block.offset - MARKER_GAP;
+      const weekIdx = Math.max(
+        0,
+        Math.min(page.weeksCount - 1, Math.floor(inner / (rowHeight + WEEK_GAP))),
+      );
+      return Math.max(page.firstOfMonthOrd, page.firstOfMonthOrd + weekIdx * 7 - page.firstColOffset);
+    },
+    [layoutTable, months, rowHeight],
+  );
 
   const onScroll = useCallback(
     (e: { nativeEvent: { contentOffset: { y: number } } }) => {
@@ -546,8 +578,15 @@ export function CalendarGrid({
       const shouldShow = home ? Math.abs(y - home.offset) > home.height * 0.6 : false;
       awayRef.current = shouldShow;
       setShowTodayPill((prev) => (prev === shouldShow ? prev : shouldShow));
+      if (onTopOrdinalChange) {
+        const ord = topOrdinalAt(y);
+        if (ord != null && ord !== topOrdRef.current) {
+          topOrdRef.current = ord;
+          onTopOrdinalChange(ord);
+        }
+      }
     },
-    [layoutTable, monthsBack, syncVisibleMonth],
+    [layoutTable, monthsBack, syncVisibleMonth, onTopOrdinalChange, topOrdinalAt],
   );
 
   // Rollover: re-check "today" on foreground + on an interval, sliding the

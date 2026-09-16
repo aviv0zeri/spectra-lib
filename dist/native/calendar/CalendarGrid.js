@@ -186,7 +186,7 @@ function TodayDisc() {
             opacity,
         } }));
 }
-export function CalendarGrid({ calendarType, layoutRTL, weekStartsOn, monthLabelStyle = 'name', t, colors, fontFamily, rowHeight, monthsBack = 12, initialMonths = 12, extendMonths = 12, maxMonthsAhead = 24, initialScrollTo = 'today', weekdayLabels, todayLabel, extraData, dayBackgroundColor, dayRingStyle, isDayDisabled, isDayMuted, renderDayBelow, renderDayCorner, renderDayBadge, renderWeekOverlay, onDayPress, onVisibleMonthChange, renderTitleAccessory, onTitlePress, footer, gridRef, testID, }) {
+export function CalendarGrid({ calendarType, layoutRTL, weekStartsOn, monthLabelStyle = 'name', t, colors, fontFamily, rowHeight, monthsBack = 12, initialMonths = 12, extendMonths = 12, maxMonthsAhead = 24, initialScrollTo = 'today', weekdayLabels, todayLabel, extraData, dayBackgroundColor, dayRingStyle, isDayDisabled, isDayMuted, renderDayBelow, renderDayCorner, renderDayBadge, renderWeekOverlay, onDayPress, onVisibleMonthChange, onTopOrdinalChange, renderTitleAccessory, onTitlePress, footer, gridRef, testID, }) {
     const system = useMemo(() => createCalendarSystem({ type: calendarType, layoutRTL, monthLabelStyle, t }), [calendarType, layoutRTL, monthLabelStyle, t]);
     const [anchorOrd, setAnchorOrd] = useState(() => localDayOrdinal(new Date()));
     const anchorOrdRef = useRef(anchorOrd);
@@ -239,6 +239,25 @@ export function CalendarGrid({ calendarType, layoutRTL, weekStartsOn, monthLabel
     }, [layoutTable, months]);
     const [showTodayPill, setShowTodayPill] = useState(false);
     const awayRef = useRef(false);
+    const topOrdRef = useRef(null);
+    // The day ordinal of the first day in the topmost visible week row: find
+    // the month block under the top edge, then the week row inside it. A
+    // leading filler row clamps to the month's own first day.
+    const topOrdinalAt = useCallback((y) => {
+        let idx = 0;
+        for (let i = 0; i < layoutTable.length; i++) {
+            if (layoutTable[i].offset > y)
+                break;
+            idx = i;
+        }
+        const page = months[idx];
+        const block = layoutTable[idx];
+        if (!page || !block)
+            return null;
+        const inner = y - block.offset - MARKER_GAP;
+        const weekIdx = Math.max(0, Math.min(page.weeksCount - 1, Math.floor(inner / (rowHeight + WEEK_GAP))));
+        return Math.max(page.firstOfMonthOrd, page.firstOfMonthOrd + weekIdx * 7 - page.firstColOffset);
+    }, [layoutTable, months, rowHeight]);
     const onScroll = useCallback((e) => {
         const y = e.nativeEvent.contentOffset.y;
         scrollOffsetRef.current = y;
@@ -247,7 +266,14 @@ export function CalendarGrid({ calendarType, layoutRTL, weekStartsOn, monthLabel
         const shouldShow = home ? Math.abs(y - home.offset) > home.height * 0.6 : false;
         awayRef.current = shouldShow;
         setShowTodayPill((prev) => (prev === shouldShow ? prev : shouldShow));
-    }, [layoutTable, monthsBack, syncVisibleMonth]);
+        if (onTopOrdinalChange) {
+            const ord = topOrdinalAt(y);
+            if (ord != null && ord !== topOrdRef.current) {
+                topOrdRef.current = ord;
+                onTopOrdinalChange(ord);
+            }
+        }
+    }, [layoutTable, monthsBack, syncVisibleMonth, onTopOrdinalChange, topOrdinalAt]);
     // Rollover: re-check "today" on foreground + on an interval, sliding the
     // window and compensating the scroll for whatever month dropped off the
     // front so the view doesn't jump.

@@ -95,6 +95,13 @@ export interface CalendarGridProps {
     renderWeekOverlay?: (page: MonthPage, weekIndex: number, rowHeight: number) => ReactNode;
     onDayPress?: (day: CalendarDay) => void;
     onVisibleMonthChange?: (page: MonthPage) => void;
+    /**
+     * The day ordinal of the topmost visible week row, reported on every scroll
+     * tick it changes -- lets a consumer feel its own content go by (a haptic
+     * as a booking's first night crosses the top of the view, say) at DAY
+     * granularity, finer than onVisibleMonthChange's month.
+     */
+    onTopOrdinalChange?: (ord: number) => void;
     /** Small accessory beside the month title (a "future month has a booking" dot, say). */
     renderTitleAccessory?: (page: MonthPage) => ReactNode;
     /** Tapping the title / its chevron -- the consumer opens its own month picker. */
@@ -103,5 +110,5 @@ export interface CalendarGridProps {
     gridRef?: ForwardedRef<CalendarGridHandle>;
     testID?: string;
 }
-export declare function CalendarGrid({ calendarType, layoutRTL, weekStartsOn, monthLabelStyle, t, colors, fontFamily, rowHeight, monthsBack, initialMonths, extendMonths, maxMonthsAhead, initialScrollTo, weekdayLabels, todayLabel, extraData, dayBackgroundColor, dayRingStyle, isDayDisabled, isDayMuted, renderDayBelow, renderDayCorner, renderDayBadge, renderWeekOverlay, onDayPress, onVisibleMonthChange, renderTitleAccessory, onTitlePress, footer, gridRef, testID, }: CalendarGridProps): import("react").JSX.Element;
+export declare function CalendarGrid({ calendarType, layoutRTL, weekStartsOn, monthLabelStyle, t, colors, fontFamily, rowHeight, monthsBack, initialMonths, extendMonths, maxMonthsAhead, initialScrollTo, weekdayLabels, todayLabel, extraData, dayBackgroundColor, dayRingStyle, isDayDisabled, isDayMuted, renderDayBelow, renderDayCorner, renderDayBadge, renderWeekOverlay, onDayPress, onVisibleMonthChange, onTopOrdinalChange, renderTitleAccessory, onTitlePress, footer, gridRef, testID, }: CalendarGridProps): import("react").JSX.Element;
 export {};
