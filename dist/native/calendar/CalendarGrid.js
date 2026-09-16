@@ -186,7 +186,7 @@ function TodayDisc() {
             opacity,
         } }));
 }
-export function CalendarGrid({ calendarType, layoutRTL, weekStartsOn, monthLabelStyle = 'name', t, colors, fontFamily, rowHeight, monthsBack = 12, initialMonths = 12, extendMonths = 12, maxMonthsAhead = 24, initialScrollTo = 'today', weekdayLabels, todayLabel, extraData, dayBackgroundColor, dayRingStyle, isDayDisabled, isDayMuted, renderDayBelow, renderDayCorner, renderDayBadge, renderWeekOverlay, onDayPress, onVisibleMonthChange, onTopOrdinalChange, renderTitleAccessory, onTitlePress, footer, gridRef, testID, }) {
+export function CalendarGrid({ calendarType, layoutRTL, weekStartsOn, monthLabelStyle = 'name', t, colors, fontFamily, rowHeight, monthsBack = 12, initialMonths = 12, extendMonths = 12, maxMonthsAhead = 24, initialScrollTo = 'today', weekdayLabels, todayLabel, extraData, dayBackgroundColor, dayRingStyle, isDayDisabled, isDayMuted, renderDayBelow, renderDayCorner, renderDayBadge, renderWeekOverlay, onDayPress, onVisibleMonthChange, onTopOrdinalChange, snapToMonths = false, renderTitleAccessory, onTitlePress, footer, gridRef, testID, }) {
     const system = useMemo(() => createCalendarSystem({ type: calendarType, layoutRTL, monthLabelStyle, t }), [calendarType, layoutRTL, monthLabelStyle, t]);
     const [anchorOrd, setAnchorOrd] = useState(() => localDayOrdinal(new Date()));
     const anchorOrdRef = useRef(anchorOrd);
@@ -204,7 +204,7 @@ export function CalendarGrid({ calendarType, layoutRTL, weekStartsOn, monthLabel
         }
         return out;
     }, [months, rowHeight]);
-    const snapOffsets = useMemo(() => layoutTable.map((l) => l.offset), [layoutTable]);
+    const snapOffsets = useMemo(() => (snapToMonths ? layoutTable.map((l) => l.offset) : undefined), [layoutTable, snapToMonths]);
     const listRef = useRef(null);
     const listHeightRef = useRef(0);
     const scrollOffsetRef = useRef(0);
@@ -342,7 +342,10 @@ export function CalendarGrid({ calendarType, layoutRTL, weekStartsOn, monthLabel
             return;
         scrollOffsetRef.current = target.offset;
         syncVisibleMonth(target.offset);
-        requestAnimationFrame(() => listRef.current?.scrollToOffset({ offset: target.offset, animated }));
+        // The target is already laid out (its offset came from the live table),
+        // so jump now: a deferred frame only adds latency to a scrub that wants
+        // to feel glued to the finger.
+        listRef.current?.scrollToOffset({ offset: target.offset, animated });
     }, [layoutTable, maxMonthsAhead, months.length, monthsBack, syncVisibleMonth]);
     useImperativeHandle(gridRef, () => ({
         scrollToToday: (animated = true) => {
@@ -404,7 +407,7 @@ export function CalendarGrid({ calendarType, layoutRTL, weekStartsOn, monthLabel
                                 fontWeight: '700',
                                 fontFamily,
                                 textAlign: 'center',
-                            }, children: weekdayLabels[wd] }) }, wd))) }) }), _jsx(FlatList, { ref: listRef, style: { flex: 1 }, data: months, keyExtractor: (m) => m.key, renderItem: renderItem, getItemLayout: getItemLayout, initialScrollIndex: initialIndex, snapToOffsets: snapOffsets, disableIntervalMomentum: true, decelerationRate: "fast", onLayout: (e) => {
+                            }, children: weekdayLabels[wd] }) }, wd))) }) }), _jsx(FlatList, { ref: listRef, style: { flex: 1 }, data: months, keyExtractor: (m) => m.key, renderItem: renderItem, getItemLayout: getItemLayout, initialScrollIndex: initialIndex, snapToOffsets: snapOffsets, disableIntervalMomentum: snapToMonths, decelerationRate: snapToMonths ? 'fast' : 'normal', onLayout: (e) => {
                     listHeightRef.current = e.nativeEvent.layout.height;
                 }, onEndReached: () => setMonthCount((n) => Math.min(maxMonthsAhead, n + extendMonths)), onEndReachedThreshold: 2, onScroll: onScroll, scrollEventThrottle: 32, extraData: listExtra, contentContainerStyle: { paddingTop: LIST_TOP_PAD, paddingHorizontal: 8, paddingBottom: 90 }, showsVerticalScrollIndicator: false }), footer, showTodayPill && todayLabel ? (_jsx(View, { pointerEvents: "box-none", style: {
                     position: 'absolute',

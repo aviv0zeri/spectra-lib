@@ -102,6 +102,13 @@ export interface CalendarGridProps {
      * granularity, finer than onVisibleMonthChange's month.
      */
     onTopOrdinalChange?: (ord: number) => void;
+    /**
+     * Snap every flick to a month start, stopping at the very next month like
+     * a paged list. Off by default: the list scrolls freely with normal
+     * momentum, the way a calendar app's month list does -- paging made a
+     * long scroll feel slow, one month per flick.
+     */
+    snapToMonths?: boolean;
     /** Small accessory beside the month title (a "future month has a booking" dot, say). */
     renderTitleAccessory?: (page: MonthPage) => ReactNode;
     /** Tapping the title / its chevron -- the consumer opens its own month picker. */
@@ -110,5 +117,5 @@ export interface CalendarGridProps {
     gridRef?: ForwardedRef<CalendarGridHandle>;
     testID?: string;
 }
-export declare function CalendarGrid({ calendarType, layoutRTL, weekStartsOn, monthLabelStyle, t, colors, fontFamily, rowHeight, monthsBack, initialMonths, extendMonths, maxMonthsAhead, initialScrollTo, weekdayLabels, todayLabel, extraData, dayBackgroundColor, dayRingStyle, isDayDisabled, isDayMuted, renderDayBelow, renderDayCorner, renderDayBadge, renderWeekOverlay, onDayPress, onVisibleMonthChange, onTopOrdinalChange, renderTitleAccessory, onTitlePress, footer, gridRef, testID, }: CalendarGridProps): import("react").JSX.Element;
+export declare function CalendarGrid({ calendarType, layoutRTL, weekStartsOn, monthLabelStyle, t, colors, fontFamily, rowHeight, monthsBack, initialMonths, extendMonths, maxMonthsAhead, initialScrollTo, weekdayLabels, todayLabel, extraData, dayBackgroundColor, dayRingStyle, isDayDisabled, isDayMuted, renderDayBelow, renderDayCorner, renderDayBadge, renderWeekOverlay, onDayPress, onVisibleMonthChange, onTopOrdinalChange, snapToMonths, renderTitleAccessory, onTitlePress, footer, gridRef, testID, }: CalendarGridProps): import("react").JSX.Element;
 export {};

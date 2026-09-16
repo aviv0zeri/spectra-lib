@@ -136,6 +136,13 @@ export interface CalendarGridProps {
    * granularity, finer than onVisibleMonthChange's month.
    */
   onTopOrdinalChange?: (ord: number) => void;
+  /**
+   * Snap every flick to a month start, stopping at the very next month like
+   * a paged list. Off by default: the list scrolls freely with normal
+   * momentum, the way a calendar app's month list does -- paging made a
+   * long scroll feel slow, one month per flick.
+   */
+  snapToMonths?: boolean;
   /** Small accessory beside the month title (a "future month has a booking" dot, say). */
   renderTitleAccessory?: (page: MonthPage) => ReactNode;
   /** Tapping the title / its chevron -- the consumer opens its own month picker. */
@@ -468,6 +475,7 @@ export function CalendarGrid({
   onDayPress,
   onVisibleMonthChange,
   onTopOrdinalChange,
+  snapToMonths = false,
   renderTitleAccessory,
   onTitlePress,
   footer,
@@ -500,7 +508,10 @@ export function CalendarGrid({
     }
     return out;
   }, [months, rowHeight]);
-  const snapOffsets = useMemo(() => layoutTable.map((l) => l.offset), [layoutTable]);
+  const snapOffsets = useMemo(
+    () => (snapToMonths ? layoutTable.map((l) => l.offset) : undefined),
+    [layoutTable, snapToMonths],
+  );
 
   const listRef = useRef<FlatList<MonthPage> | null>(null);
   const listHeightRef = useRef(0);
@@ -657,9 +668,10 @@ export function CalendarGrid({
       if (!target) return;
       scrollOffsetRef.current = target.offset;
       syncVisibleMonth(target.offset);
-      requestAnimationFrame(() =>
-        listRef.current?.scrollToOffset({ offset: target.offset, animated }),
-      );
+      // The target is already laid out (its offset came from the live table),
+      // so jump now: a deferred frame only adds latency to a scrub that wants
+      // to feel glued to the finger.
+      listRef.current?.scrollToOffset({ offset: target.offset, animated });
     },
     [layoutTable, maxMonthsAhead, months.length, monthsBack, syncVisibleMonth],
   );
@@ -796,8 +808,8 @@ export function CalendarGrid({
         getItemLayout={getItemLayout}
         initialScrollIndex={initialIndex}
         snapToOffsets={snapOffsets}
-        disableIntervalMomentum
-        decelerationRate="fast"
+        disableIntervalMomentum={snapToMonths}
+        decelerationRate={snapToMonths ? 'fast' : 'normal'}
         onLayout={(e) => {
           listHeightRef.current = e.nativeEvent.layout.height;
         }}
