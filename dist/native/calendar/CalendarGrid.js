@@ -63,13 +63,17 @@ function MonthBlock({ page, system, rowHeight, weekStartsOn, layoutRTL, todayOrd
                             const isSaturday = weekday(col) === SATURDAY;
                             const divider = col > 0 ? { borderLeftWidth: StyleSheet.hairlineWidth, borderLeftColor: colors.rim } : null;
                             if (dayNum < 1 || dayNum > page.daysInMonth) {
-                                // Neighbouring-month filler: the card ground plus the faint
-                                // wash, no number -- contiguous fillers merge into one band
-                                // because the card has no inter-cell gaps.
+                                // A LEADING filler (before day 1) wears the faint grey wash
+                                // that marks "not this month"; a TRAILING filler (after the
+                                // last day) is erased -- blank, no wash, no divider -- so the
+                                // month ends clean instead of on a grey block. Contiguous
+                                // leading fillers still merge into one band (no inter-cell
+                                // gaps in the card).
+                                const trailing = dayNum > page.daysInMonth;
                                 return (_jsx(View, { style: [
-                                        { flex: 1, backgroundColor: `${colors.rim}55` },
-                                        isSaturday ? { backgroundColor: colors.weekendTint } : null,
-                                        divider,
+                                        { flex: 1 },
+                                        trailing ? null : { backgroundColor: `${colors.rim}55` },
+                                        trailing ? null : divider,
                                     ] }, col));
                             }
                             const ord = page.firstOfMonthOrd + (dayNum - 1);
@@ -124,7 +128,9 @@ function MonthBlock({ page, system, rowHeight, weekStartsOn, layoutRTL, todayOrd
                                                         textAlign: 'center',
                                                         fontSize: 15,
                                                         lineHeight: DAY_NUM_LINE_H,
-                                                        fontWeight: day.isToday ? '800' : '600',
+                                                        // Uniform weight -- today is marked by the disc, not
+                                                        // a heavier number (on request 2026-09-16).
+                                                        fontWeight: '600',
                                                         fontFamily,
                                                         color: day.isToday ? TODAY_ON_FILL : muted ? colors.muted : colors.text,
                                                         fontVariant: ['tabular-nums'],
