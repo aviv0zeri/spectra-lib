@@ -86,6 +86,15 @@ type DayNodeFn = (day: CalendarDay) => ReactNode;
 export interface CalendarGridHandle {
   scrollToToday: (animated?: boolean) => void;
   scrollToGregorianMonth: (year: number, month0: number) => void;
+  /**
+   * Jump to a page by its own key (a MonthPage's `key`, from onVisibleMonthChange,
+   * onMonthLayout, or the system's buildPages). The right call when the
+   * caller holds a page: for the Hebrew formation a page's Gregorian
+   * year/month names the month its FIRST day falls in, which
+   * scrollToGregorianMonth resolves to the page before it. A key beyond the
+   * loaded window loads it first.
+   */
+  scrollToPage: (key: string) => void;
 }
 
 export interface CalendarGridProps {
@@ -162,6 +171,14 @@ export interface CalendarGridProps {
    * overlays on that edge (a scrubber rail) so it never covers a day.
    */
   endInset?: number;
+  /**
+   * Drawn over the list viewport (absolutely positioned children span it
+   * exactly: top 0 = the first visible row's edge, bottom 0 = the last),
+   * above the rows and below the footer -- a scrubber rail, say. Touches on
+   * it are its own; pass pointerEvents="box-none" on its wrapper to let the
+   * rest through to the rows.
+   */
+  listOverlay?: ReactNode;
   /** Small accessory beside the month title (a "future month has a booking" dot, say). */
   renderTitleAccessory?: (page: MonthPage) => ReactNode;
   /** Tapping the title / its chevron -- the consumer opens its own month picker. */
@@ -498,6 +515,7 @@ export function CalendarGrid({
   scrollY,
   onMonthLayout,
   endInset = 0,
+  listOverlay,
   renderTitleAccessory,
   onTitlePress,
   footer,
@@ -738,8 +756,19 @@ export function CalendarGrid({
       scrollToGregorianMonth: (year: number, month0: number) => {
         scrollToFlat(system.flatIndexForGregorian(anchorKey, year, month0), false);
       },
+      scrollToPage: (key: string) => {
+        const loaded = months.findIndex((m) => m.key === key);
+        if (loaded >= 0) {
+          scrollToFlat(loaded - monthsBack, false);
+          return;
+        }
+        // Beyond the loaded window: locate it in the full reachable span.
+        const all = system.buildPages(anchorKey, monthsBack, maxMonthsAhead, weekStartsOn);
+        const i = all.findIndex((m) => m.key === key);
+        if (i >= 0) scrollToFlat(i - monthsBack, false);
+      },
     }),
-    [layoutTable, monthsBack, scrollToFlat, system, anchorKey],
+    [layoutTable, monthsBack, scrollToFlat, system, anchorKey, months, maxMonthsAhead, weekStartsOn],
   );
 
   const getItemLayout = useCallback(
@@ -829,8 +858,10 @@ export function CalendarGrid({
 
       <View
         style={{
-          paddingLeft: 16 + (layoutRTL ? endInset : 0),
-          paddingRight: 16 + (layoutRTL ? 0 : endInset),
+          // The same inset as the week cards below, so the seven header
+          // columns sit exactly over the seven day columns.
+          paddingLeft: 8 + (layoutRTL ? endInset : 0),
+          paddingRight: 8 + (layoutRTL ? 0 : endInset),
           marginTop: 10,
           marginBottom: 4,
         }}
@@ -854,6 +885,7 @@ export function CalendarGrid({
         </View>
       </View>
 
+      <View style={{ flex: 1 }}>
       <Animated.FlatList
         ref={listRef}
         style={{ flex: 1 }}
@@ -881,6 +913,19 @@ export function CalendarGrid({
         }}
         showsVerticalScrollIndicator={false}
       />
+      {/* Keeps the consumer's scrollY attached for the grid's lifetime. An
+          Animated value whose last child detaches drops its native node,
+          while the list's native scroll event stays bound to the dropped one
+          -- so a consumer that mounts and unmounts what rides scrollY would
+          otherwise find it frozen. Zero-size, touch-transparent. */}
+      {scrollY ? (
+        <Animated.View
+          pointerEvents="none"
+          style={{ position: 'absolute', width: 0, height: 0, transform: [{ translateY: scrollY }] }}
+        />
+      ) : null}
+      {listOverlay}
+      </View>
 
       {footer}
 

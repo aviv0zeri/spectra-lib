@@ -186,7 +186,7 @@ function TodayDisc() {
             opacity,
         } }));
 }
-export function CalendarGrid({ calendarType, layoutRTL, weekStartsOn, monthLabelStyle = 'name', t, colors, fontFamily, rowHeight, monthsBack = 12, initialMonths = 12, extendMonths = 12, maxMonthsAhead = 24, initialScrollTo = 'today', weekdayLabels, todayLabel, extraData, dayBackgroundColor, dayRingStyle, isDayDisabled, isDayMuted, renderDayBelow, renderDayCorner, renderDayBadge, renderWeekOverlay, onDayPress, onVisibleMonthChange, onTopOrdinalChange, snapToMonths = false, scrollY, onMonthLayout, endInset = 0, renderTitleAccessory, onTitlePress, footer, gridRef, testID, }) {
+export function CalendarGrid({ calendarType, layoutRTL, weekStartsOn, monthLabelStyle = 'name', t, colors, fontFamily, rowHeight, monthsBack = 12, initialMonths = 12, extendMonths = 12, maxMonthsAhead = 24, initialScrollTo = 'today', weekdayLabels, todayLabel, extraData, dayBackgroundColor, dayRingStyle, isDayDisabled, isDayMuted, renderDayBelow, renderDayCorner, renderDayBadge, renderWeekOverlay, onDayPress, onVisibleMonthChange, onTopOrdinalChange, snapToMonths = false, scrollY, onMonthLayout, endInset = 0, listOverlay, renderTitleAccessory, onTitlePress, footer, gridRef, testID, }) {
     const system = useMemo(() => createCalendarSystem({ type: calendarType, layoutRTL, monthLabelStyle, t }), [calendarType, layoutRTL, monthLabelStyle, t]);
     const [anchorOrd, setAnchorOrd] = useState(() => localDayOrdinal(new Date()));
     const anchorOrdRef = useRef(anchorOrd);
@@ -378,7 +378,19 @@ export function CalendarGrid({ calendarType, layoutRTL, weekStartsOn, monthLabel
         scrollToGregorianMonth: (year, month0) => {
             scrollToFlat(system.flatIndexForGregorian(anchorKey, year, month0), false);
         },
-    }), [layoutTable, monthsBack, scrollToFlat, system, anchorKey]);
+        scrollToPage: (key) => {
+            const loaded = months.findIndex((m) => m.key === key);
+            if (loaded >= 0) {
+                scrollToFlat(loaded - monthsBack, false);
+                return;
+            }
+            // Beyond the loaded window: locate it in the full reachable span.
+            const all = system.buildPages(anchorKey, monthsBack, maxMonthsAhead, weekStartsOn);
+            const i = all.findIndex((m) => m.key === key);
+            if (i >= 0)
+                scrollToFlat(i - monthsBack, false);
+        },
+    }), [layoutTable, monthsBack, scrollToFlat, system, anchorKey, months, maxMonthsAhead, weekStartsOn]);
     const getItemLayout = useCallback((_d, index) => ({
         length: layoutTable[index]?.height || 0,
         offset: layoutTable[index]?.offset || 0,
@@ -423,8 +435,10 @@ export function CalendarGrid({ calendarType, layoutRTL, weekStartsOn, monthLabel
                             textAlign: layoutRTL ? 'right' : 'left',
                             writingDirection: layoutRTL ? 'rtl' : 'ltr',
                         }, children: visiblePage ? system.title(visiblePage) : '' }), onTitlePress ? _jsx(Chevron, { color: colors.muted }) : null, visiblePage ? renderTitleAccessory?.(visiblePage) : null] }), _jsx(View, { style: {
-                    paddingLeft: 16 + (layoutRTL ? endInset : 0),
-                    paddingRight: 16 + (layoutRTL ? 0 : endInset),
+                    // The same inset as the week cards below, so the seven header
+                    // columns sit exactly over the seven day columns.
+                    paddingLeft: 8 + (layoutRTL ? endInset : 0),
+                    paddingRight: 8 + (layoutRTL ? 0 : endInset),
                     marginTop: 10,
                     marginBottom: 4,
                 }, children: _jsx(View, { style: { flexDirection: 'row', direction: layoutRTL ? 'rtl' : 'ltr' }, children: weekdayOrder.map((wd) => (_jsx(View, { style: { flex: 1, alignItems: 'center' }, children: _jsx(Text, { style: {
@@ -433,14 +447,14 @@ export function CalendarGrid({ calendarType, layoutRTL, weekStartsOn, monthLabel
                                 fontWeight: '700',
                                 fontFamily,
                                 textAlign: 'center',
-                            }, children: weekdayLabels[wd] }) }, wd))) }) }), _jsx(Animated.FlatList, { ref: listRef, style: { flex: 1 }, data: months, keyExtractor: (m) => m.key, renderItem: renderItem, getItemLayout: getItemLayout, initialScrollIndex: initialIndex, snapToOffsets: snapOffsets, disableIntervalMomentum: snapToMonths, decelerationRate: snapToMonths ? 'fast' : 'normal', onLayout: (e) => {
-                    listHeightRef.current = e.nativeEvent.layout.height;
-                }, onEndReached: () => setMonthCount((n) => Math.min(maxMonthsAhead, n + extendMonths)), onEndReachedThreshold: 2, onScroll: scrollHandler, scrollEventThrottle: 16, extraData: listExtra, contentContainerStyle: {
-                    paddingTop: LIST_TOP_PAD,
-                    paddingLeft: 8 + (layoutRTL ? endInset : 0),
-                    paddingRight: 8 + (layoutRTL ? 0 : endInset),
-                    paddingBottom: 90,
-                }, showsVerticalScrollIndicator: false }), footer, showTodayPill && todayLabel ? (_jsx(View, { pointerEvents: "box-none", style: {
+                            }, children: weekdayLabels[wd] }) }, wd))) }) }), _jsxs(View, { style: { flex: 1 }, children: [_jsx(Animated.FlatList, { ref: listRef, style: { flex: 1 }, data: months, keyExtractor: (m) => m.key, renderItem: renderItem, getItemLayout: getItemLayout, initialScrollIndex: initialIndex, snapToOffsets: snapOffsets, disableIntervalMomentum: snapToMonths, decelerationRate: snapToMonths ? 'fast' : 'normal', onLayout: (e) => {
+                            listHeightRef.current = e.nativeEvent.layout.height;
+                        }, onEndReached: () => setMonthCount((n) => Math.min(maxMonthsAhead, n + extendMonths)), onEndReachedThreshold: 2, onScroll: scrollHandler, scrollEventThrottle: 16, extraData: listExtra, contentContainerStyle: {
+                            paddingTop: LIST_TOP_PAD,
+                            paddingLeft: 8 + (layoutRTL ? endInset : 0),
+                            paddingRight: 8 + (layoutRTL ? 0 : endInset),
+                            paddingBottom: 90,
+                        }, showsVerticalScrollIndicator: false }), scrollY ? (_jsx(Animated.View, { pointerEvents: "none", style: { position: 'absolute', width: 0, height: 0, transform: [{ translateY: scrollY }] } })) : null, listOverlay] }), footer, showTodayPill && todayLabel ? (_jsx(View, { pointerEvents: "box-none", style: {
                     position: 'absolute',
                     bottom: footer ? 52 : 18,
                     left: 0,

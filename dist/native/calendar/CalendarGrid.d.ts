@@ -48,6 +48,15 @@ type DayNodeFn = (day: CalendarDay) => ReactNode;
 export interface CalendarGridHandle {
     scrollToToday: (animated?: boolean) => void;
     scrollToGregorianMonth: (year: number, month0: number) => void;
+    /**
+     * Jump to a page by its own key (a MonthPage's `key`, from onVisibleMonthChange,
+     * onMonthLayout, or the system's buildPages). The right call when the
+     * caller holds a page: for the Hebrew formation a page's Gregorian
+     * year/month names the month its FIRST day falls in, which
+     * scrollToGregorianMonth resolves to the page before it. A key beyond the
+     * loaded window loads it first.
+     */
+    scrollToPage: (key: string) => void;
 }
 export interface CalendarGridProps {
     calendarType: CalendarType;
@@ -133,6 +142,14 @@ export interface CalendarGridProps {
      * overlays on that edge (a scrubber rail) so it never covers a day.
      */
     endInset?: number;
+    /**
+     * Drawn over the list viewport (absolutely positioned children span it
+     * exactly: top 0 = the first visible row's edge, bottom 0 = the last),
+     * above the rows and below the footer -- a scrubber rail, say. Touches on
+     * it are its own; pass pointerEvents="box-none" on its wrapper to let the
+     * rest through to the rows.
+     */
+    listOverlay?: ReactNode;
     /** Small accessory beside the month title (a "future month has a booking" dot, say). */
     renderTitleAccessory?: (page: MonthPage) => ReactNode;
     /** Tapping the title / its chevron -- the consumer opens its own month picker. */
@@ -141,5 +158,5 @@ export interface CalendarGridProps {
     gridRef?: ForwardedRef<CalendarGridHandle>;
     testID?: string;
 }
-export declare function CalendarGrid({ calendarType, layoutRTL, weekStartsOn, monthLabelStyle, t, colors, fontFamily, rowHeight, monthsBack, initialMonths, extendMonths, maxMonthsAhead, initialScrollTo, weekdayLabels, todayLabel, extraData, dayBackgroundColor, dayRingStyle, isDayDisabled, isDayMuted, renderDayBelow, renderDayCorner, renderDayBadge, renderWeekOverlay, onDayPress, onVisibleMonthChange, onTopOrdinalChange, snapToMonths, scrollY, onMonthLayout, endInset, renderTitleAccessory, onTitlePress, footer, gridRef, testID, }: CalendarGridProps): import("react").JSX.Element;
+export declare function CalendarGrid({ calendarType, layoutRTL, weekStartsOn, monthLabelStyle, t, colors, fontFamily, rowHeight, monthsBack, initialMonths, extendMonths, maxMonthsAhead, initialScrollTo, weekdayLabels, todayLabel, extraData, dayBackgroundColor, dayRingStyle, isDayDisabled, isDayMuted, renderDayBelow, renderDayCorner, renderDayBadge, renderWeekOverlay, onDayPress, onVisibleMonthChange, onTopOrdinalChange, snapToMonths, scrollY, onMonthLayout, endInset, listOverlay, renderTitleAccessory, onTitlePress, footer, gridRef, testID, }: CalendarGridProps): import("react").JSX.Element;
 export {};
