@@ -303,3 +303,49 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
 });
+
+// ---------------------------------------------------------------------------
+// Calendar -- a reusable month-grid calendar (gregorian / hebrew / mixed) and
+// the pure date arithmetic behind it. The formations live in the library, not
+// as scattered cases in a consumer, and the day math is one implementation
+// every app of Aviv's shares. See ./calendar/*.
+// ---------------------------------------------------------------------------
+export { CalendarGrid } from './calendar/CalendarGrid';
+export type {
+  CalendarGridProps,
+  CalendarGridHandle,
+  CalendarColors,
+  CalendarDay,
+} from './calendar/CalendarGrid';
+export { createCalendarSystem, computeDroppedWeeks } from './calendar/formations';
+export type { CalendarType, CalendarSystem, MonthPage, DayLabels } from './calendar/formations';
+export {
+  getMonthGrid,
+  getHebrewMonthGrid,
+  localDayOrdinal,
+  dateFromLocalDayOrdinal,
+  DAY_MS,
+} from './calendar/grid';
+export type { MonthGrid, HebrewMonthGrid } from './calendar/grid';
+export {
+  gregorianToHebrew,
+  hebrewToGregorian,
+  hebrewLeapYear,
+  lastDayOfHebrewMonth,
+  hebrewMonthsInOrder,
+  hebrewMonthOrdinal,
+  addHebrewMonths,
+  hebrewMonthName,
+  hebrewMonthKey,
+  hebrewYearLetters,
+  hebrewDayLetters,
+} from './calendar/hebrewDate';
+export type { HebrewDate } from './calendar/hebrewDate';
+export {
+  floorDiv,
+  mod,
+  gregorianLeapYear,
+  fixedFromGregorian,
+  gregorianFromFixed,
+  gregorianYearFromFixed,
+} from './calendar/fixedDay';

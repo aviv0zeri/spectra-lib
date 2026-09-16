@@ -1,0 +1,115 @@
+/**
+ * React Native building blocks for a "the backend is unreachable" state --
+ * a full-screen replacement (`StatusScreen`) and a non-blocking inline
+ * banner (`StatusBanner`). GateOpen MobileApp hand-rolled both of these
+ * (`ServerDownScreen.js`, `ConnectionBanner.js`) and nothing about either
+ * one is actually GateOpen-specific once the theme, copy and icon are
+ * pulled out into props -- every future RN app of Aviv's needs the same
+ * two shapes (a centered full-screen state, a compact inline one) and
+ * would otherwise re-copy both by hand.
+ *
+ * Deliberately excluded, same reasoning as the rest of this package:
+ * - No icon library. `icon` is a caller-supplied ReactNode, exactly like
+ *   `Container` -- an icon set (Ionicons or otherwise) stays the
+ *   consumer's dependency, not this package's.
+ * - No default `Container` beyond a plain View. It exists only so a
+ *   consumer can drop in their own glass/blur surface (GateOpen's
+ *   Liquid-Glass-aware `GlassSurface`) without this package taking on
+ *   that dependency -- omit it and both components render exactly what a
+ *   plain View wrapper gives you.
+ * - No default colors anywhere in `StatusColors`. Same convention as
+ *   `tokens.ts`'s DARK/LIGHT: the caller's theme is the only source, this
+ *   package never injects a palette of its own.
+ */
+import type { ComponentType, ReactNode } from 'react';
+import type { StyleProp, TextStyle, ViewStyle } from 'react-native';
+/** The caller's theme, read verbatim -- no defaults, no fallback palette. */
+export type StatusColors = {
+    text: string;
+    muted: string;
+    accent: string;
+    onAccent: string;
+    panel: string;
+    rim: string;
+};
+export type StatusAction = {
+    label: string;
+    onPress: () => void;
+};
+/**
+ * Shape every `Container` override must satisfy -- deliberately just
+ * `style` + `children`, the minimum a glass/blur surface needs to slot in
+ * as a drop-in replacement for a plain `View`.
+ */
+type StatusContainerProps = {
+    style?: StyleProp<ViewStyle>;
+    children?: ReactNode;
+};
+export interface StatusScreenProps {
+    title: string;
+    message?: string;
+    icon?: ReactNode;
+    action?: StatusAction;
+    colors: StatusColors;
+    rtl?: boolean;
+    Container?: ComponentType<StatusContainerProps>;
+    titleStyle?: StyleProp<TextStyle>;
+    messageStyle?: StyleProp<TextStyle>;
+    actionTextStyle?: StyleProp<TextStyle>;
+    contentContainerStyle?: StyleProp<ViewStyle>;
+    testID?: string;
+}
+export interface StatusBannerProps {
+    title: string;
+    message?: string;
+    icon?: ReactNode;
+    colors: StatusColors;
+    rtl?: boolean;
+    Container?: ComponentType<StatusContainerProps>;
+    style?: StyleProp<ViewStyle>;
+    titleStyle?: StyleProp<TextStyle>;
+    messageStyle?: StyleProp<TextStyle>;
+    testID?: string;
+}
+/**
+ * Full-screen centered state -- an unreachable backend, an empty result, any
+ * "nothing to show but here's why and what to do" moment. A ScrollView, not
+ * a plain centered View: a short title plus a longer/localized message plus
+ * the OS's own "larger text" accessibility setting can together exceed the
+ * viewport, and a fixed center would strand `action` off-screen and
+ * unreachable.
+ */
+export declare function StatusScreen({ title, message, icon, action, colors, rtl, Container, titleStyle, messageStyle, actionTextStyle, contentContainerStyle, testID, }: StatusScreenProps): import("react").JSX.Element;
+/**
+ * Non-blocking inline banner for the same kind of state -- rendered
+ * alongside content that still works (e.g. cached data) rather than
+ * replacing it.
+ *
+ * RTL: the outer row stays plain `flexDirection: 'row'` with icon-then-column
+ * JSX order and gets its OWN `direction` from `rtl` -- Yoga mirrors a plain
+ * 'row' for you when direction is 'rtl', landing the icon at the reading-start
+ * edge in both directions. `flexDirection: 'row-reverse'` is deliberately
+ * NOT used here: it would flip a second time on top of the direction flip and
+ * put the icon at the wrong edge (the bug this replaces).
+ *
+ * The inner column then pins its OWN `direction` back to 'ltr'. This isn't
+ * decorative: on RN 0.81's new architecture, a Text's `textAlign: 'left' |
+ * 'right'` is resolved as LOGICAL (start/end) rather than physical once that
+ * Text's own resolved layout direction is RTL -- and direction is inherited,
+ * so without this the column (and the Text children in it) would inherit the
+ * row's 'rtl' and silently flip `textAlign: rtl ? 'right' : 'left'` to the
+ * wrong physical edge. Pinning the column to 'ltr' keeps its resolved
+ * direction LTR regardless of the row around it, so 'left'/'right' stay
+ * genuinely physical and the title/message land flush against the edge
+ * closest to the icon in both directions.
+ */
+export declare function StatusBanner({ title, message, icon, colors, rtl, Container, style, titleStyle, messageStyle, testID, }: StatusBannerProps): import("react").JSX.Element;
+export { CalendarGrid } from './calendar/CalendarGrid';
+export type { CalendarGridProps, CalendarGridHandle, CalendarColors, CalendarDay, } from './calendar/CalendarGrid';
+export { createCalendarSystem, computeDroppedWeeks } from './calendar/formations';
+export type { CalendarType, CalendarSystem, MonthPage, DayLabels } from './calendar/formations';
+export { getMonthGrid, getHebrewMonthGrid, localDayOrdinal, dateFromLocalDayOrdinal, DAY_MS, } from './calendar/grid';
+export type { MonthGrid, HebrewMonthGrid } from './calendar/grid';
+export { gregorianToHebrew, hebrewToGregorian, hebrewLeapYear, lastDayOfHebrewMonth, hebrewMonthsInOrder, hebrewMonthOrdinal, addHebrewMonths, hebrewMonthName, hebrewMonthKey, hebrewYearLetters, hebrewDayLetters, } from './calendar/hebrewDate';
+export type { HebrewDate } from './calendar/hebrewDate';
+export { floorDiv, mod, gregorianLeapYear, fixedFromGregorian, gregorianFromFixed, gregorianYearFromFixed, } from './calendar/fixedDay';
