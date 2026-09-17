@@ -51,6 +51,14 @@ export interface CalendarColors {
   title: string;
   /** A faint tint laid down the weekend (Saturday) column. */
   weekendTint: string;
+  /**
+   * The screen behind the calendar (a consumer's own void/page colour).
+   * Painted on a trailing filler cell (the blank days after the month
+   * ends) so it reads as the page showing through, not a stray patch of
+   * the week card's own `panel` colour -- optional, defaults to
+   * 'transparent' (the week card's panel shows through, the old look).
+   */
+  background?: string;
 }
 
 export interface CalendarDay {
@@ -283,8 +291,25 @@ function MonthBlock({
                 const flatIdx = weekIdx * 7 + col;
                 const dayNum = flatIdx - page.firstColOffset + 1;
                 const isSaturday = weekday(col) === SATURDAY;
+                // A hairline border is a PHYSICAL left/right edge -- it does
+                // NOT mirror with `direction`, only the row's child ORDER
+                // does. Under RTL the array is rendered right-to-left, so
+                // the array's own first/last index no longer sit at the
+                // row's visual left edge: col 0 lands at the visual RIGHT
+                // now, col 6 at the visual LEFT. Excluding col 0 (as LTR
+                // correctly does, to leave the row's own left edge bare)
+                // left the wrong pair undivided under RTL -- the boundary
+                // between the array's col 0 and col 1, which after the
+                // mirror are the row's rightmost two cells -- while col 6
+                // (now the true leftmost, needing no divider) kept one it
+                // no longer touches anything to the left of. Excluding
+                // whichever index sits at the ACTUAL leftmost visual
+                // position fixes both ends for either direction.
+                const leftmostCol = layoutRTL ? 6 : 0;
                 const divider =
-                  col > 0 ? { borderLeftWidth: StyleSheet.hairlineWidth, borderLeftColor: colors.rim } : null;
+                  col !== leftmostCol
+                    ? { borderLeftWidth: StyleSheet.hairlineWidth, borderLeftColor: colors.rim }
+                    : null;
                 if (dayNum < 1 || dayNum > page.daysInMonth) {
                   // A LEADING filler (before day 1) wears the faint grey wash
                   // that marks "not this month"; a TRAILING filler (after the
@@ -298,7 +323,9 @@ function MonthBlock({
                       key={col}
                       style={[
                         { flex: 1 },
-                        trailing ? null : { backgroundColor: `${colors.rim}55` },
+                        trailing
+                          ? { backgroundColor: colors.background ?? 'transparent' }
+                          : { backgroundColor: `${colors.rim}55` },
                         trailing ? null : (divider as ViewStyle),
                       ]}
                     />

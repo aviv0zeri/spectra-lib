@@ -16,6 +16,14 @@ export interface CalendarColors {
     title: string;
     /** A faint tint laid down the weekend (Saturday) column. */
     weekendTint: string;
+    /**
+     * The screen behind the calendar (a consumer's own void/page colour).
+     * Painted on a trailing filler cell (the blank days after the month
+     * ends) so it reads as the page showing through, not a stray patch of
+     * the week card's own `panel` colour -- optional, defaults to
+     * 'transparent' (the week card's panel shows through, the old look).
+     */
+    background?: string;
 }
 export interface CalendarDay {
     /** The whole-day ordinal (DST-safe) -- the stable key for booking math. */
