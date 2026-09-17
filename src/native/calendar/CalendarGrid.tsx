@@ -406,6 +406,19 @@ function MonthBlock({
                             fontFamily,
                             color: day.isToday ? TODAY_ON_FILL : muted ? colors.muted : colors.text,
                             fontVariant: ['tabular-nums'],
+                            // A day-1 number gets a soft drop shadow -- the
+                            // marker (month name/number) already sitting
+                            // below it makes this cell the one that starts
+                            // a new month, and the lift makes the number
+                            // itself read as the one that's "raised" for
+                            // it (on request). Every other day stays flat.
+                            ...(day.monthMarker != null
+                              ? {
+                                  textShadowColor: 'rgba(0,0,0,0.35)',
+                                  textShadowOffset: { width: 0, height: 1 },
+                                  textShadowRadius: 2,
+                                }
+                              : null),
                           }}
                         >
                           {day.bigLabel}
