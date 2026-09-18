@@ -101,6 +101,19 @@ export interface CalendarGridProps {
      */
     extraData?: unknown;
     dayBackgroundColor?: DayStyleFn;
+    /**
+     * A full-cell fill beyond dayBackgroundColor's flat color -- an SVG
+     * LinearGradient, say. Absolutely filled to the cell, rendered UNDER the
+     * day number / below-text / corner / badge and ON TOP of
+     * dayBackgroundColor's own flat fill (so a consumer can layer the two, or
+     * use this alone and leave dayBackgroundColor's return undefined).
+     * pointerEvents="none": never intercepts the day's own tap. Give whatever
+     * you return `style={StyleSheet.absoluteFill}` (not percentage width/
+     * height props) to fill the cell -- react-native-svg's own percentage-
+     * prop sizing is inconsistent across platforms, while a style-based fill
+     * against the wrapping View (itself sized reliably by Yoga) always works.
+     */
+    renderDayBackground?: DayNodeFn;
     dayRingStyle?: DayRingFn;
     isDayDisabled?: DayBoolFn;
     isDayMuted?: DayBoolFn;
@@ -166,5 +179,5 @@ export interface CalendarGridProps {
     gridRef?: ForwardedRef<CalendarGridHandle>;
     testID?: string;
 }
-export declare function CalendarGrid({ calendarType, layoutRTL, weekStartsOn, monthLabelStyle, t, colors, fontFamily, rowHeight, monthsBack, initialMonths, extendMonths, maxMonthsAhead, initialScrollTo, weekdayLabels, todayLabel, extraData, dayBackgroundColor, dayRingStyle, isDayDisabled, isDayMuted, renderDayBelow, renderDayCorner, renderDayBadge, renderWeekOverlay, onDayPress, onVisibleMonthChange, onTopOrdinalChange, snapToMonths, scrollY, onMonthLayout, endInset, listOverlay, renderTitleAccessory, onTitlePress, footer, gridRef, testID, }: CalendarGridProps): import("react").JSX.Element;
+export declare function CalendarGrid({ calendarType, layoutRTL, weekStartsOn, monthLabelStyle, t, colors, fontFamily, rowHeight, monthsBack, initialMonths, extendMonths, maxMonthsAhead, initialScrollTo, weekdayLabels, todayLabel, extraData, dayBackgroundColor, renderDayBackground, dayRingStyle, isDayDisabled, isDayMuted, renderDayBelow, renderDayCorner, renderDayBadge, renderWeekOverlay, onDayPress, onVisibleMonthChange, onTopOrdinalChange, snapToMonths, scrollY, onMonthLayout, endInset, listOverlay, renderTitleAccessory, onTitlePress, footer, gridRef, testID, }: CalendarGridProps): import("react").JSX.Element;
 export {};

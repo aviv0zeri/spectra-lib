@@ -134,6 +134,19 @@ export interface CalendarGridProps {
   extraData?: unknown;
 
   dayBackgroundColor?: DayStyleFn;
+  /**
+   * A full-cell fill beyond dayBackgroundColor's flat color -- an SVG
+   * LinearGradient, say. Absolutely filled to the cell, rendered UNDER the
+   * day number / below-text / corner / badge and ON TOP of
+   * dayBackgroundColor's own flat fill (so a consumer can layer the two, or
+   * use this alone and leave dayBackgroundColor's return undefined).
+   * pointerEvents="none": never intercepts the day's own tap. Give whatever
+   * you return `style={StyleSheet.absoluteFill}` (not percentage width/
+   * height props) to fill the cell -- react-native-svg's own percentage-
+   * prop sizing is inconsistent across platforms, while a style-based fill
+   * against the wrapping View (itself sized reliably by Yoga) always works.
+   */
+  renderDayBackground?: DayNodeFn;
   dayRingStyle?: DayRingFn;
   isDayDisabled?: DayBoolFn;
   isDayMuted?: DayBoolFn;
@@ -249,6 +262,7 @@ function MonthBlock({
   fontFamily?: string;
   slots: {
     dayBackgroundColor?: DayStyleFn;
+    renderDayBackground?: DayNodeFn;
     dayRingStyle?: DayRingFn;
     isDayDisabled?: DayBoolFn;
     isDayMuted?: DayBoolFn;
@@ -353,6 +367,7 @@ function MonthBlock({
                   page,
                 };
                 const bg = slots.dayBackgroundColor?.(day);
+                const background = slots.renderDayBackground?.(day);
                 const ring = slots.dayRingStyle?.(day);
                 const disabled = slots.isDayDisabled?.(day) ?? false;
                 const muted = slots.isDayMuted?.(day) ?? false;
@@ -380,12 +395,30 @@ function MonthBlock({
                     <View
                       style={[
                         { flex: 1 },
+                        // renderDayBackground paints as an absolutely-filled
+                        // CHILD (below), not this View's own backgroundColor
+                        // -- unlike `bg`, which RN clips to this View's own
+                        // border-radius automatically, an absolute child is
+                        // NOT clipped to an ancestor's radius unless the
+                        // ancestor sets overflow:'hidden'. dayRingStyle can
+                        // in principle carry a borderRadius (it's a plain
+                        // ViewStyle), so this is here to keep a rounded ring
+                        // + a full-cell gradient consistent with each other
+                        // rather than the gradient squaring off past the
+                        // ring's corners. A no-op for every ring style that
+                        // has no radius (the only kind in use today).
+                        { overflow: 'hidden' },
                         isSaturday ? { backgroundColor: colors.weekendTint } : null,
                         bg ? { backgroundColor: bg } : null,
                         divider as ViewStyle,
                         ring as ViewStyle,
                       ]}
                     >
+                      {background != null ? (
+                        <View pointerEvents="none" style={StyleSheet.absoluteFill}>
+                          {background}
+                        </View>
+                      ) : null}
                       <View
                         style={{
                           marginTop: DAY_NUM_TOP,
@@ -541,6 +574,7 @@ export function CalendarGrid({
   todayLabel,
   extraData,
   dayBackgroundColor,
+  renderDayBackground,
   dayRingStyle,
   isDayDisabled,
   isDayMuted,
@@ -835,6 +869,7 @@ export function CalendarGrid({
   const slotsRef = useRef<Parameters<typeof MonthBlock>[0]['slots']>({});
   slotsRef.current = {
     dayBackgroundColor,
+    renderDayBackground,
     dayRingStyle,
     isDayDisabled,
     isDayMuted,

@@ -116,6 +116,7 @@ function MonthBlock({ page, system, rowHeight, weekStartsOn, layoutRTL, todayOrd
                                 page,
                             };
                             const bg = slots.dayBackgroundColor?.(day);
+                            const background = slots.renderDayBackground?.(day);
                             const ring = slots.dayRingStyle?.(day);
                             const disabled = slots.isDayDisabled?.(day) ?? false;
                             const muted = slots.isDayMuted?.(day) ?? false;
@@ -134,11 +135,24 @@ function MonthBlock({ page, system, rowHeight, weekStartsOn, layoutRTL, todayOrd
                                     pressed ? { opacity: 0.85 } : null,
                                 ], children: _jsxs(View, { style: [
                                         { flex: 1 },
+                                        // renderDayBackground paints as an absolutely-filled
+                                        // CHILD (below), not this View's own backgroundColor
+                                        // -- unlike `bg`, which RN clips to this View's own
+                                        // border-radius automatically, an absolute child is
+                                        // NOT clipped to an ancestor's radius unless the
+                                        // ancestor sets overflow:'hidden'. dayRingStyle can
+                                        // in principle carry a borderRadius (it's a plain
+                                        // ViewStyle), so this is here to keep a rounded ring
+                                        // + a full-cell gradient consistent with each other
+                                        // rather than the gradient squaring off past the
+                                        // ring's corners. A no-op for every ring style that
+                                        // has no radius (the only kind in use today).
+                                        { overflow: 'hidden' },
                                         isSaturday ? { backgroundColor: colors.weekendTint } : null,
                                         bg ? { backgroundColor: bg } : null,
                                         divider,
                                         ring,
-                                    ], children: [_jsxs(View, { style: {
+                                    ], children: [background != null ? (_jsx(View, { pointerEvents: "none", style: StyleSheet.absoluteFill, children: background })) : null, _jsxs(View, { style: {
                                                 marginTop: DAY_NUM_TOP,
                                                 height: DAY_NUM_LINE_H,
                                                 alignItems: 'center',
@@ -218,7 +232,7 @@ function TodayDisc() {
             opacity,
         } }));
 }
-export function CalendarGrid({ calendarType, layoutRTL, weekStartsOn, monthLabelStyle = 'name', t, colors, fontFamily, rowHeight, monthsBack = 12, initialMonths = 12, extendMonths = 12, maxMonthsAhead = 24, initialScrollTo = 'today', weekdayLabels, todayLabel, extraData, dayBackgroundColor, dayRingStyle, isDayDisabled, isDayMuted, renderDayBelow, renderDayCorner, renderDayBadge, renderWeekOverlay, onDayPress, onVisibleMonthChange, onTopOrdinalChange, snapToMonths = false, scrollY, onMonthLayout, endInset = 0, listOverlay, renderTitleAccessory, onTitlePress, footer, gridRef, testID, }) {
+export function CalendarGrid({ calendarType, layoutRTL, weekStartsOn, monthLabelStyle = 'name', t, colors, fontFamily, rowHeight, monthsBack = 12, initialMonths = 12, extendMonths = 12, maxMonthsAhead = 24, initialScrollTo = 'today', weekdayLabels, todayLabel, extraData, dayBackgroundColor, renderDayBackground, dayRingStyle, isDayDisabled, isDayMuted, renderDayBelow, renderDayCorner, renderDayBadge, renderWeekOverlay, onDayPress, onVisibleMonthChange, onTopOrdinalChange, snapToMonths = false, scrollY, onMonthLayout, endInset = 0, listOverlay, renderTitleAccessory, onTitlePress, footer, gridRef, testID, }) {
     const system = useMemo(() => createCalendarSystem({ type: calendarType, layoutRTL, monthLabelStyle, t }), [calendarType, layoutRTL, monthLabelStyle, t]);
     const [anchorOrd, setAnchorOrd] = useState(() => localDayOrdinal(new Date()));
     const anchorOrdRef = useRef(anchorOrd);
@@ -440,6 +454,7 @@ export function CalendarGrid({ calendarType, layoutRTL, weekStartsOn, monthLabel
     const slotsRef = useRef({});
     slotsRef.current = {
         dayBackgroundColor,
+        renderDayBackground,
         dayRingStyle,
         isDayDisabled,
         isDayMuted,
