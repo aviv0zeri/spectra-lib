@@ -59,6 +59,12 @@ export interface CalendarColors {
    * 'transparent' (the week card's panel shows through, the old look).
    */
   background?: string;
+  /**
+   * A faint fill laid down the 1st-of-month cell, the same shape as
+   * `weekendTint` -- optional, defaults to no fill (the day-1 number's
+   * own drop shadow is the only month-start cue, the old look).
+   */
+  monthMarkerTint?: string;
 }
 
 export interface CalendarDay {
@@ -216,6 +222,18 @@ export interface CalendarGridProps {
 const TODAY_CIRCLE = '#e5484d';
 const TODAY_ON_FILL = '#ffffff';
 const TODAY_CIRCLE_SIZE = 22;
+
+// The "back to today" pill, same "stays constant on purpose" reasoning as
+// TODAY_CIRCLE above -- a floating overlay riding OVER the grid rather
+// than a cell in it, so a dark consumer theme's own panel/text tones (a
+// dark panel with light text, same as every other surface) left it just
+// blending into the dark ground behind it instead of reading as a floating
+// control. Always light-styled regardless of the caller's own theme -- a
+// no-op change for a light consumer theme (its own panel/text already
+// resolve close to these), a real lift for a dark one.
+const TODAY_PILL_BG = '#ffffff';
+const TODAY_PILL_TEXT = '#14141a';
+const TODAY_PILL_BORDER = 'rgba(0, 0, 0, 0.08)';
 
 const DAY_NUM_TOP = 4;
 const DAY_NUM_LINE_H = 18;
@@ -409,6 +427,18 @@ function MonthBlock({
                         // has no radius (the only kind in use today).
                         { overflow: 'hidden' },
                         isSaturday ? { backgroundColor: colors.weekendTint } : null,
+                        // A day-1 cell already got a drop shadow on its
+                        // number (see textShadow below); a faint fill on
+                        // the cell itself too (on request 2026-09-18: "the
+                        // first of every month should be a little less
+                        // white... to stand out more") -- after
+                        // weekendTint (a month start on a Saturday reads
+                        // as month start first) and before `bg` (the
+                        // consumer's own per-day content, a holiday say,
+                        // still wins over either decorative tint).
+                        day.monthMarker != null && colors.monthMarkerTint
+                          ? { backgroundColor: colors.monthMarkerTint }
+                          : null,
                         bg ? { backgroundColor: bg } : null,
                         divider as ViewStyle,
                         ring as ViewStyle,
@@ -1027,9 +1057,9 @@ export function CalendarGrid({
                 paddingVertical: 9,
                 paddingHorizontal: 16,
                 borderRadius: 20,
-                backgroundColor: colors.panel,
+                backgroundColor: TODAY_PILL_BG,
                 borderWidth: 1,
-                borderColor: colors.rim,
+                borderColor: TODAY_PILL_BORDER,
                 shadowColor: '#000',
                 shadowOffset: { width: 0, height: 4 },
                 shadowOpacity: 0.25,
@@ -1040,7 +1070,7 @@ export function CalendarGrid({
             ]}
           >
             <Text
-              style={{ color: colors.text, fontSize: 13, fontWeight: '700', fontFamily }}
+              style={{ color: TODAY_PILL_TEXT, fontSize: 13, fontWeight: '700', fontFamily }}
             >
               {todayLabel}
             </Text>

@@ -24,6 +24,12 @@ export interface CalendarColors {
      * 'transparent' (the week card's panel shows through, the old look).
      */
     background?: string;
+    /**
+     * A faint fill laid down the 1st-of-month cell, the same shape as
+     * `weekendTint` -- optional, defaults to no fill (the day-1 number's
+     * own drop shadow is the only month-start cue, the old look).
+     */
+    monthMarkerTint?: string;
 }
 export interface CalendarDay {
     /** The whole-day ordinal (DST-safe) -- the stable key for booking math. */

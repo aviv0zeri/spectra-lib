@@ -23,6 +23,17 @@ import { computeDroppedWeeks, createCalendarSystem, dateFromLocalDayOrdinal, loc
 const TODAY_CIRCLE = '#e5484d';
 const TODAY_ON_FILL = '#ffffff';
 const TODAY_CIRCLE_SIZE = 22;
+// The "back to today" pill, same "stays constant on purpose" reasoning as
+// TODAY_CIRCLE above -- a floating overlay riding OVER the grid rather
+// than a cell in it, so a dark consumer theme's own panel/text tones (a
+// dark panel with light text, same as every other surface) left it just
+// blending into the dark ground behind it instead of reading as a floating
+// control. Always light-styled regardless of the caller's own theme -- a
+// no-op change for a light consumer theme (its own panel/text already
+// resolve close to these), a real lift for a dark one.
+const TODAY_PILL_BG = '#ffffff';
+const TODAY_PILL_TEXT = '#14141a';
+const TODAY_PILL_BORDER = 'rgba(0, 0, 0, 0.08)';
 const DAY_NUM_TOP = 4;
 const DAY_NUM_LINE_H = 18;
 const SUB_LABEL_LINE_H = 13;
@@ -149,6 +160,18 @@ function MonthBlock({ page, system, rowHeight, weekStartsOn, layoutRTL, todayOrd
                                         // has no radius (the only kind in use today).
                                         { overflow: 'hidden' },
                                         isSaturday ? { backgroundColor: colors.weekendTint } : null,
+                                        // A day-1 cell already got a drop shadow on its
+                                        // number (see textShadow below); a faint fill on
+                                        // the cell itself too (on request 2026-09-18: "the
+                                        // first of every month should be a little less
+                                        // white... to stand out more") -- after
+                                        // weekendTint (a month start on a Saturday reads
+                                        // as month start first) and before `bg` (the
+                                        // consumer's own per-day content, a holiday say,
+                                        // still wins over either decorative tint).
+                                        day.monthMarker != null && colors.monthMarkerTint
+                                            ? { backgroundColor: colors.monthMarkerTint }
+                                            : null,
                                         bg ? { backgroundColor: bg } : null,
                                         divider,
                                         ring,
@@ -516,9 +539,9 @@ export function CalendarGrid({ calendarType, layoutRTL, weekStartsOn, monthLabel
                             paddingVertical: 9,
                             paddingHorizontal: 16,
                             borderRadius: 20,
-                            backgroundColor: colors.panel,
+                            backgroundColor: TODAY_PILL_BG,
                             borderWidth: 1,
-                            borderColor: colors.rim,
+                            borderColor: TODAY_PILL_BORDER,
                             shadowColor: '#000',
                             shadowOffset: { width: 0, height: 4 },
                             shadowOpacity: 0.25,
@@ -526,7 +549,7 @@ export function CalendarGrid({ calendarType, layoutRTL, weekStartsOn, monthLabel
                             elevation: 6,
                         },
                         pressed ? { transform: [{ scale: 0.96 }], opacity: 0.85 } : null,
-                    ], children: _jsx(Text, { style: { color: colors.text, fontSize: 13, fontWeight: '700', fontFamily }, children: todayLabel }) }) })) : null] }));
+                    ], children: _jsx(Text, { style: { color: TODAY_PILL_TEXT, fontSize: 13, fontWeight: '700', fontFamily }, children: todayLabel }) }) })) : null] }));
 }
 /** A down chevron drawn with two strokes -- no icon dependency (this package ships none). */
 function Chevron({ color }) {
