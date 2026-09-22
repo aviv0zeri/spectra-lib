@@ -85,6 +85,39 @@ function MonthBlock({ page, system, rowHeight, weekStartsOn, layoutRTL, todayOrd
                 const lastDayNumInRow = firstDayNumInRow + 6;
                 const trailingCount = Math.max(0, Math.min(7, lastDayNumInRow - page.daysInMonth));
                 const realCount = 7 - leadingCount - trailingCount;
+                // Where the filler card and the real-day card actually TOUCH,
+                // neither gets a border or a rounded corner on that shared edge
+                // -- otherwise two independent rounded rects meeting face to face
+                // read as a seam (a double line, two half-corners) instead of one
+                // continuous shape blending from one fill into the other (on
+                // request 2026-09-22: "it should blend with edges and colors...
+                // at the end"). `direction` reorders CHILDREN (DOM order is
+                // always [leading?, real, trailing?]; under RTL that renders
+                // leading rightmost, trailing leftmost) but a physical
+                // left/right border/radius never mirrors on its own, so each
+                // side below is computed per layoutRTL like the dividers above
+                // already are. A row never has both leading and trailing filler
+                // at once, so realInnerSide is at most one side.
+                const realInnerSide = leadingCount > 0
+                    ? (layoutRTL ? 'right' : 'left')
+                    : trailingCount > 0
+                        ? (layoutRTL ? 'left' : 'right')
+                        : null;
+                // Trailing filler itself stays a plain, borderless View -- no
+                // symmetric "inner side" needed there, only on realCard's own
+                // side facing it (realInnerSide above already covers that).
+                const leadingInnerSide = layoutRTL ? 'left' : 'right';
+                const cardRadii = (side) => ({
+                    borderTopLeftRadius: side === 'left' ? 0 : 14,
+                    borderBottomLeftRadius: side === 'left' ? 0 : 14,
+                    borderTopRightRadius: side === 'right' ? 0 : 14,
+                    borderBottomRightRadius: side === 'right' ? 0 : 14,
+                    borderTopWidth: StyleSheet.hairlineWidth,
+                    borderBottomWidth: StyleSheet.hairlineWidth,
+                    borderLeftWidth: side === 'left' ? 0 : StyleSheet.hairlineWidth,
+                    borderRightWidth: side === 'right' ? 0 : StyleSheet.hairlineWidth,
+                    borderColor: `${colors.rim}55`,
+                });
                 return (_jsxs(View, { style: {
                         height: rowHeight,
                         marginBottom: weekIdx === page.weeksCount - 1 ? 0 : WEEK_GAP,
@@ -93,21 +126,19 @@ function MonthBlock({ page, system, rowHeight, weekStartsOn, layoutRTL, todayOrd
                     }, children: [leadingCount > 0 ? (_jsx(Pressable, { onPress: onFillerPress, style: {
                                 flex: leadingCount,
                                 flexDirection: 'row',
-                                borderRadius: 14,
-                                borderWidth: StyleSheet.hairlineWidth,
-                                borderColor: `${colors.rim}55`,
+                                ...cardRadii(leadingInnerSide),
                                 overflow: 'hidden',
                             }, children: Array.from({ length: leadingCount }, (_, i) => (_jsx(View, { style: { flex: 1, backgroundColor: `${colors.rim}33` } }, i))) })) : null, realCount > 0 ? (_jsx(View, { style: {
                                 flex: realCount,
                                 flexDirection: 'row',
                                 direction: layoutRTL ? 'rtl' : 'ltr',
                                 backgroundColor: colors.panel,
-                                borderRadius: 14,
-                                borderWidth: StyleSheet.hairlineWidth,
                                 // Faded, not a crisp line -- the card's edge should read as
                                 // a soft boundary against the plain filler beside it, not a
-                                // hard-edged box (on request 2026-09-22).
-                                borderColor: `${colors.rim}55`,
+                                // hard-edged box (on request 2026-09-22). And no border/
+                                // radius at all on the side touching the filler card --
+                                // see realInnerSide above.
+                                ...cardRadii(realInnerSide),
                                 overflow: 'hidden',
                             }, children: Array.from({ length: realCount }, (_, i) => {
                                 const col = leadingCount + i;
