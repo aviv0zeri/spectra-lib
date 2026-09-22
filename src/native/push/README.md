@@ -30,28 +30,24 @@ Python tooling at all today (`tsc`-only build, see package.json). If a second
 project needs the SAME send-side plumbing later, that's its own future shared
 package, not this one.
 
-## Provider question this scaffold leaves open, on purpose
+## Provider question -- resolved 2026-09-22, in favor of Expo's relay
 
 GateOpen's current `pushNotifications.js` goes through **Expo's own push
 service** (`Notifications.getExpoPushTokenAsync`) -- a relay Expo operates in
-front of APNs/FCM, not a direct integration with either. Aviv asked for this
-interface to be built "according to apple and google docs" -- which could mean
-either:
+front of APNs/FCM, not a direct integration with either. This scaffold's own
+README originally left open whether to keep going through that relay or go
+past it to real APNs/FCM tokens (a project's own backend calling Apple/Google
+directly -- more control, no Expo-service single point of failure, but real
+work: a backend APNs/FCM client per project, .p8/service-account credential
+handling, token-type bookkeeping).
 
-1. Keep going through Expo's relay (simplest, works today, already proven in
-   GateOpen), and this interface is just a cleaner/shared wrapper around the
-   same `expo-notifications` calls, OR
-2. Go past Expo's relay to the real APNs device token / FCM registration token
-   and a project's own backend calls Apple/Google directly (more control -- rich
-   payload features some Expo relay versions lag behind on, no Expo-service
-   outage as a single point of failure for every project -- but real work: a
-   backend APNs/FCM client per project, .p8/service-account credential
-   handling, token-type bookkeeping).
-
-Not decided here -- `types.ts`'s `PushToken` shape below supports either
-(`provider: 'expo' | 'apns' | 'fcm'` on the token), so this can start on Expo's
-relay (matching what already works) and move later without a breaking change to
-every file that just wants "the current device token."
+Implemented against option 1, Expo's relay: it's what GateOpen already proves
+out today, and every file in this tree (`registration.ts` in particular) is a
+thin wrapper around the matching `expo-notifications` call. `types.ts`'s
+`PushToken.provider: 'expo' | 'apns' | 'fcm'` still supports moving to a
+direct integration later without a breaking change to any file that just
+wants "the current device token" -- that migration is real, un-started
+follow-up work, not implied by this implementation.
 
 ## Apple/Google references this scaffold is built against
 
@@ -110,14 +106,23 @@ src/native/push/
                       detail behind this barrel
 ```
 
-## Wiring into a consuming project (once this is real)
+## Wiring into a consuming project
 
 Same pattern as `spectra-lib/native`'s existing StatusScreen/StatusBanner
 (`src/native/index.tsx`, on branch `feat/native-status-components`, not yet on
-main): a project imports from `spectra-lib/native/push` (or folds into the
-same `spectra-lib/native` entry, whichever `package.json`'s `exports` map ends
-up doing), pinned to a tagged spectra-lib version the same way GateOpen already
-pins spectra-lib for everything else. GateOpen's own
-`beta/apps/MobileApp/front/src/lib/pushNotifications.js` is the thing this is
-meant to eventually replace -- migrating it over is real follow-up work once
-this lands, not implied by scaffolding it.
+main): a project imports from `spectra-lib/native/push`, pinned to a tagged
+spectra-lib version the same way GateOpen already pins spectra-lib for
+everything else. `package.json` exports this tree at its own `./native/push`
+subpath rather than folding into `./native` -- that entry belongs to the
+still-unmerged `feat/native-status-components` branch, and keeping these
+independent avoids a package.json conflict when the two branches merge;
+consolidating both native subpaths under one `./native` barrel later is a
+deliberate follow-up, not automatic.
+
+GateOpen's own `beta/apps/MobileApp/front/src/lib/pushNotifications.js` is
+the thing this is meant to eventually replace -- migrating it over (and
+wiring up the foreground/background/local/deep-link pieces GateOpen doesn't
+have today at all) is real follow-up work once a version of this is tagged
+and pinned, not implied by landing it here. Per CLAUDE.md's spectra-lib rule,
+that migration is part of the same piece of work as extracting this, not a
+task to leave queued indefinitely once a tag exists.

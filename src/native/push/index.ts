@@ -1,13 +1,12 @@
 /**
  * The public surface of spectra-lib's push-notification interface. See
- * README.md for scope, the Apple/Google docs this is built against, and the
- * provider question (Expo relay vs direct APNs/FCM) still left open.
+ * README.md for scope and the Apple/Google docs this is built against.
  *
- * Every file behind this barrel is a scaffold as of 2026-09-22 -- types are
- * real and meant to be stable; function bodies are `TODO`-stubbed for Aviv
- * to implement (each file's own header comment has the design intent for
- * its piece). This index shouldn't need to change shape as those fill in --
- * only the internals behind each export should.
+ * Implemented as of 2026-09-22 against Expo's own push relay (getExpoPushTokenAsync)
+ * rather than direct APNs/FCM tokens -- README.md's "provider question,"
+ * resolved in favor of the path GateOpen's current pushNotifications.js
+ * already proves out; PushToken.provider still supports 'apns'/'fcm' if a
+ * project ever needs to move past the relay without a breaking change here.
  */
 
 export * from './types';

@@ -2,7 +2,7 @@
   "name": "spectra-lib",
   "version": "0.28.0",
   "private": true,
-  "description": "Aviv's personal shared library -- reusable components/tokens/utilities that span more than one project. Currently: GateOpen's design tokens, a cn() helper, a findUp() build-config utility, cv/portfolio's shared chrome.css/dom.js, a Radix-based dashboard UI component set shared by GateOpen/bagStore/SpectraHub/Raptor2, a GSAP scroll-reveal module (React + vanilla) shared by eliyaWebsite/spectra-website/portfolio-family sites, a tech/brand icon set (React + vanilla) shared by spectra-website and cv, the spectra-ui UI-catalog scanner/CLI (Spectra Design Bridge, 2026-08-28), and React Native status components (StatusScreen/StatusBanner) shared by native apps.",
+  "description": "Aviv's personal shared library -- reusable components/tokens/utilities that span more than one project. Currently: GateOpen's design tokens, a cn() helper, a findUp() build-config utility, cv/portfolio's shared chrome.css/dom.js, a Radix-based dashboard UI component set shared by GateOpen/bagStore/SpectraHub/Raptor2, a GSAP scroll-reveal module (React + vanilla) shared by eliyaWebsite/spectra-website/portfolio-family sites, a tech/brand icon set (React + vanilla) shared by spectra-website and cv, the spectra-ui UI-catalog scanner/CLI (Spectra Design Bridge, 2026-08-28), React Native status components (StatusScreen/StatusBanner) shared by native apps, and a React Native push-notification interface (permissions/registration/channels/foreground/background/local/deep-link) built on expo-notifications.",
   "type": "module",
   "main": "dist/tokens.js",
   "types": "dist/tokens.d.ts",
@@ -46,6 +46,10 @@
       "types": "./dist/native/index.d.ts",
       "default": "./dist/native/index.js"
     },
+    "./native/push": {
+      "types": "./dist/native/push/index.d.ts",
+      "default": "./dist/native/push/index.js"
+    },
     "./styles/theme.css": "./styles/theme.css",
     "./styles/chrome.css": "./styles/chrome.css"
   },
@@ -67,6 +71,9 @@
   "peerDependencies": {
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
+    "expo-constants": ">=18.0.0",
+    "expo-notifications": ">=0.32.0",
+    "expo-task-manager": ">=57.0.0",
     "gsap": "^3.13.0",
     "lucide-react": "^1.25.0",
     "radix-ui": "^1.6.2",
@@ -80,6 +87,15 @@
       "optional": true
     },
     "clsx": {
+      "optional": true
+    },
+    "expo-constants": {
+      "optional": true
+    },
+    "expo-notifications": {
+      "optional": true
+    },
+    "expo-task-manager": {
       "optional": true
     },
     "gsap": {
@@ -109,6 +125,10 @@
     "@types/react-dom": "^19.1.0",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
+    "expo": "~54.0.33",
+    "expo-constants": "~18.0.13",
+    "expo-notifications": "^0.32.17",
+    "expo-task-manager": "~57.0.19",
     "gsap": "^3.13.0",
     "lucide-react": "^1.25.0",
     "radix-ui": "^1.6.2",

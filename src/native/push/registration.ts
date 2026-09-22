@@ -1,61 +1,66 @@
 /**
- * Device token lifecycle -- obtaining, refreshing, and clearing this
- * device's push token. See README.md's "provider question" -- this file's
- * actual implementation depends on whether the consuming project stays on
- * Expo's push relay or goes to real APNs/FCM tokens; the PushToken shape in
- * types.ts is meant to survive that decision either way.
- *
- * TODO(aviv): implement. GateOpen's current registerForPushNotificationsAsync()
- * is the Expo-relay version of this exact function -- permission check,
- * Android channel bootstrap, then Notifications.getExpoPushTokenAsync().
- *
- * Design intent, not yet enforced by the stubs below:
- * - registerDevice() should call getPermissionStatus() (permissions.ts)
- *   itself rather than assume the caller already checked -- but should NOT
- *   call requestPermission(): obtaining a token without permission having
- *   been explicitly asked for by the caller's own flow is how you end up
- *   surprise-prompting a user on app launch instead of at a moment that
- *   explains why. A denied/undetermined status should resolve to `null`,
- *   never throw -- same "never throws, caller treats null as nothing to
- *   register" contract GateOpen's current version already has.
- * - Both APNs and FCM tokens can change without the app doing anything
- *   (device restore, OS reinstall, Firebase's own token rotation) -- a real
- *   implementation needs a way to hear about that (expo-notifications'
- *   addPushTokenListener, or the native token-refresh delegate callback if
- *   this ever goes past Expo's relay) and re-register, not just fetch once
- *   at login the way GateOpen's current version does.
- * - unregisterDevice() (logout) should tell the backend to stop targeting
- *   this token -- there's no local-only "unregister" on either platform,
- *   this is inherently a server call, so this function's job is producing
- *   the right token id, not depending on OS-side deregistration.
+ * Device token lifecycle, built on Expo's push relay (see README.md's
+ * "provider question" -- this is the path GateOpen's current
+ * registerForPushNotificationsAsync() already uses and proves out; moving to
+ * real APNs/FCM tokens later only changes this file, not PushToken's shape).
  */
+import Constants from 'expo-constants';
+import * as Notifications from 'expo-notifications';
 
+import { getPermissionStatus } from './permissions';
 import type { PushToken } from './types';
 
 /**
- * Obtains (or reuses) this device's current push token, or null if
- * permission isn't granted, this is a device/emulator without push
- * capability, or the project has no EAS/build config to issue one against.
- * Never throws.
+ * Obtains this device's current Expo push token, or null if permission
+ * isn't granted, the build has no EAS projectId (e.g. Expo Go), or
+ * getExpoPushTokenAsync itself fails (simulator/emulator, offline, no push
+ * capability) -- never throws, same contract as GateOpen's current
+ * registerForPushNotificationsAsync(). Deliberately does NOT call
+ * requestPermission() itself; a denied/undetermined status resolves to
+ * null so a caller decides when the permission prompt happens.
  */
 export async function registerDevice(): Promise<PushToken | null> {
-  throw new Error('not implemented');
-}
+  try {
+    const status = await getPermissionStatus();
+    if (status !== 'granted') return null;
 
-/** Tells the caller's own backend this token should stop being targeted --
- * see the design intent above for why this is a backend call, not an
- * OS-side one. */
-export async function unregisterDevice(_token: PushToken): Promise<void> {
-  throw new Error('not implemented');
+    const projectId = Constants.expoConfig?.extra?.eas?.projectId;
+    if (!projectId) return null;
+
+    const { data } = await Notifications.getExpoPushTokenAsync({ projectId });
+    if (!data) return null;
+
+    return { provider: 'expo', value: data, obtainedAt: new Date().toISOString() };
+  } catch {
+    return null;
+  }
 }
 
 /**
- * Subscribes to token refresh events for as long as the returned unsubscribe
- * function isn't called -- see the design intent above on why this can't be
- * a one-shot fetch. Call the given handler with the NEW token each time it
- * changes; the caller is responsible for re-registering it with their own
- * backend.
+ * No OS-side "forget this token" call exists on either platform -- the
+ * actual stop-targeting call is the consuming project's own backend request
+ * (the same split registerDevice()'s caller already has: this lib produces
+ * the token, the project's own API call is what registers or unregisters it
+ * server-side). This is a documented no-op so the interface stays symmetric
+ * with registerDevice() rather than the split being implicit.
  */
-export function onTokenRefresh(_handler: (token: PushToken) => void): () => void {
-  throw new Error('not implemented');
+export async function unregisterDevice(_token: PushToken): Promise<void> {
+  return undefined;
+}
+
+/**
+ * expo-notifications' addPushTokenListener fires with the raw native device
+ * push token (APNs/FCM), not an Expo push token -- Expo's relay derives
+ * ExponentPushToken[...] from the native token server-side, so a naive
+ * implementation that wired the listener's own payload into PushToken.value
+ * would hand the caller a token in the wrong format. Re-deriving via
+ * registerDevice() on each native-token change is the correct fix.
+ */
+export function onTokenRefresh(handler: (token: PushToken) => void): () => void {
+  const subscription = Notifications.addPushTokenListener(() => {
+    void registerDevice().then((token) => {
+      if (token) handler(token);
+    });
+  });
+  return () => subscription.remove();
 }

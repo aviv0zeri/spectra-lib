@@ -1,35 +1,12 @@
 /**
  * What happens when a notification arrives while the app is OPEN. Both
- * platforms default to showing nothing visible in this case (the user is
- * already looking at the app) unless the app opts in -- this file is where
- * that opt-in decision lives, once, instead of scattered per-screen.
- *
- * TODO(aviv): implement against expo-notifications' Notifications.
- * setNotificationHandler({ handleNotification: ... }). Nothing in GateOpen's
- * current pushNotifications.js sets this at all today -- foreground behavior
- * is whatever expo-notifications' own default is, unexamined.
- *
- * Design intent, not yet enforced by the stub below:
- * - The handler this registers must call the notifySound.js-style player
- *   for the notification's own category sound (see types.ts's
- *   NotificationCategory.sound) itself if it decides to play a sound in
- *   foreground -- setNotificationHandler's shouldPlaySound only controls the
- *   OS's own alert sound behavior for a BACKGROUNDED app; a foregrounded app
- *   showing its own in-app banner is responsible for its own sound the same
- *   way any other in-app sound effect is (see notifySound.js in the
- *   consuming project).
- * - Silent/data-only events (NotificationEvent.silent) must never reach
- *   whatever UI banner this shows -- route those to background.ts's handling
- *   instead, even if they technically arrive while foregrounded (a background
- *   fetch trigger firing while the app happens to be open is still not a
- *   user-facing alert).
- * - This should let the CALLER decide per-category whether foreground
- *   presentation happens (a chat-style project might want every message
- *   category to show something even in-app; GateOpen might want none of its
- *   categories to, since the relevant screen is presumably already visible if
- *   the app is open) -- not hardcode one global answer here.
+ * platforms default to showing nothing in this case -- this file is where a
+ * project opts in, once, via a per-category decision function instead of
+ * scattering the choice per screen.
  */
+import * as Notifications from 'expo-notifications';
 
+import { toNotificationEvent } from './internal/notification';
 import type { NotificationEvent } from './types';
 
 export interface ForegroundPresentation {
@@ -48,7 +25,43 @@ export interface ForegroundPresentation {
  * open, for as long as the returned unsubscribe function isn't called.
  */
 export function setForegroundHandler(
-  _decide: (event: NotificationEvent) => ForegroundPresentation,
+  decide: (event: NotificationEvent) => ForegroundPresentation,
 ): () => void {
-  throw new Error('not implemented');
+  Notifications.setNotificationHandler({
+    // expo-notifications gives this 3 seconds to resolve before it drops
+    // the notification -- `decide` is synchronous specifically so a caller
+    // can't accidentally blow that budget with an awaited call of their own.
+    handleNotification: async (notification) => {
+      const event = toNotificationEvent(notification);
+
+      // Silent/data-only events are background.ts's concern even when they
+      // technically arrive while foregrounded -- never let one reach the
+      // caller's own presentation decision.
+      if (event.silent) {
+        return {
+          shouldShowBanner: false,
+          shouldShowList: false,
+          shouldPlaySound: false,
+          shouldSetBadge: false,
+        };
+      }
+
+      const presentation = decide(event);
+      return {
+        shouldShowBanner: presentation.showBanner,
+        shouldShowList: presentation.showBanner,
+        // Only reaches the OS's own alert-sound behavior for a backgrounded
+        // app -- a genuinely foregrounded banner needs the caller's OWN
+        // sound playback (its notifySound.js-style player), triggered from
+        // inside `decide` itself using the event's category, since this
+        // flag alone isn't guaranteed to do anything while frontmost.
+        shouldPlaySound: presentation.playSound,
+        shouldSetBadge: presentation.updateBadge,
+      };
+    },
+  });
+
+  return () => {
+    Notifications.setNotificationHandler(null);
+  };
 }

@@ -1,36 +1,11 @@
 /**
- * LOCAL notifications -- scheduled entirely on-device, no server round-trip,
- * no push token involved at all. Apple and Google both treat this as a
- * first-class, separate API from remote push (UNNotificationRequest /
- * Android's own AlarmManager-backed scheduling via NotificationManager) --
- * it belongs in this tree because it shares presentation/channel concerns
- * with remote push (same NotificationCategory, same Android channel), not
- * because it's the same delivery mechanism.
- *
- * Example use a consuming project might reach for this instead of a server
- * push: GateOpen's own "remind me before a guest arrives" -- purely
- * client-scheduled against a date the host already has locally, no reason
- * to round-trip a server for it.
- *
- * TODO(aviv): implement against expo-notifications' Notifications.
- * scheduleNotificationAsync() / cancelScheduledNotificationAsync() /
- * getAllScheduledNotificationsAsync().
- *
- * Design intent, not yet enforced by the stub below:
- * - schedule() should return an id the caller can hold onto to cancel it
- *   later (a reminder for a guest whose stay got cancelled needs to be
- *   cancelled, not just left to fire against stale data).
- * - Rescheduling (the same logical reminder, a changed trigger time)
- *   should be modeled as cancel-then-schedule by the caller, not a separate
- *   update() here -- neither platform's own scheduling API has an atomic
- *   "reschedule," so pretending this does would hide a real two-step
- *   operation behind a false one-step API.
- * - A local notification still needs a NotificationCategory (for its
- *   Android channel / iOS category) -- schedule() should reuse channels.ts's
- *   `ensureChannels` contract rather than assume the caller already set the
- *   channel up.
+ * LOCAL notifications -- scheduled entirely on-device via expo-notifications'
+ * own scheduleNotificationAsync()/cancelScheduledNotificationAsync()/
+ * cancelAllScheduledNotificationsAsync(), no push token or server involved.
  */
+import * as Notifications from 'expo-notifications';
 
+import { ensureChannels } from './channels';
 import type { NotificationCategory } from './types';
 
 export interface LocalNotificationRequest {
@@ -42,18 +17,54 @@ export interface LocalNotificationRequest {
   trigger: Date | { secondsFromNow: number };
 }
 
-/** Schedules one local notification, returning an id usable with cancel(). */
-export async function schedule(
-  _request: LocalNotificationRequest,
-  _category: NotificationCategory,
-): Promise<string> {
-  throw new Error('not implemented');
+function toTrigger(
+  trigger: LocalNotificationRequest['trigger'],
+  channelId: string,
+): Notifications.NotificationTriggerInput {
+  if (trigger instanceof Date) {
+    return { type: Notifications.SchedulableTriggerInputTypes.DATE, date: trigger, channelId };
+  }
+  return {
+    type: Notifications.SchedulableTriggerInputTypes.TIME_INTERVAL,
+    seconds: trigger.secondsFromNow,
+    channelId,
+  };
 }
 
-export async function cancel(_id: string): Promise<void> {
-  throw new Error('not implemented');
+/** NotificationCategory.sound's 'default' is a channels.ts/iOS-sound-name
+ * convention this tree defines -- expo's own scheduling API instead wants a
+ * bare `true` for "play the default sound." */
+function contentSound(sound: string | undefined): boolean | string | undefined {
+  if (sound === undefined) return undefined;
+  return sound === 'default' ? true : sound;
+}
+
+/** Schedules one local notification, returning an id usable with cancel(). */
+export async function schedule(
+  request: LocalNotificationRequest,
+  category: NotificationCategory,
+): Promise<string> {
+  await ensureChannels([category]);
+  return Notifications.scheduleNotificationAsync({
+    content: {
+      title: request.title,
+      body: request.body,
+      // Stamped alongside the caller's own data so a fired local notification
+      // resolves through the same categoryId convention as a remote push
+      // (see internal/notification.ts) -- categoryIdentifier below is only
+      // the iOS fallback path.
+      data: { ...request.data, categoryId: request.categoryId },
+      categoryIdentifier: category.id,
+      sound: contentSound(category.sound),
+    },
+    trigger: toTrigger(request.trigger, category.id),
+  });
+}
+
+export async function cancel(id: string): Promise<void> {
+  await Notifications.cancelScheduledNotificationAsync(id);
 }
 
 export async function cancelAll(): Promise<void> {
-  throw new Error('not implemented');
+  await Notifications.cancelAllScheduledNotificationsAsync();
 }

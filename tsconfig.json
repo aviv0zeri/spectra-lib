@@ -8,10 +8,10 @@
     "allowJs": true,
     "checkJs": true,
     "strict": true,
-    // react-native's own bundled .d.ts collides with lib.dom.d.ts on several
-    // global type names (Blob/File/Request/...) once both are in scope --
-    // this only skips checking third-party .d.ts files, src/ itself still
-    // compiles strict.
+    // react-native/expo-* bundle their own .d.ts, which collides with
+    // lib.dom.d.ts on several global type names (Blob/File/Request/...)
+    // once both are in scope -- this only skips checking third-party
+    // .d.ts files, src/ itself still compiles strict.
     "skipLibCheck": true,
     "declaration": true,
     "outDir": "dist",
