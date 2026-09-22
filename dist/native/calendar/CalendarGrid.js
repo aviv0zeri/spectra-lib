@@ -437,26 +437,30 @@ export function CalendarGrid({ calendarType, layoutRTL, weekStartsOn, monthLabel
         // to feel glued to the finger.
         listRef.current?.scrollToOffset({ offset: target.offset, animated });
     }, [layoutTable, maxMonthsAhead, months.length, monthsBack, syncVisibleMonth]);
+    // Land today's own week as the SECOND visible row, not flush at the very
+    // top -- one row of context above it, same rule the year-overview picker
+    // already follows landing on an anchor month (on request). No row above
+    // WITHIN this month (today's week is the month's first) falls back to the
+    // plain month-top offset -- reaching into the previous month's own last
+    // row for a "row above" isn't worth the complexity for a landing that
+    // already reads fine flush at a month boundary.
+    //
+    // Shared by the imperative scrollToToday() AND the floating today pill's
+    // own tap below -- they must land on the exact same offset, not two
+    // independently-hand-rolled scrolls that drift apart.
+    const goToToday = useCallback((animated = true) => {
+        const home = layoutTable[monthsBack];
+        const page = months[monthsBack];
+        if (!home)
+            return;
+        const weekIdx = page
+            ? Math.floor((page.firstColOffset + (anchorOrdRef.current - page.firstOfMonthOrd)) / 7)
+            : 0;
+        const offset = home.offset + Math.max(0, weekIdx - 1) * (rowHeight + WEEK_GAP);
+        requestAnimationFrame(() => listRef.current?.scrollToOffset({ offset, animated }));
+    }, [layoutTable, months, monthsBack, rowHeight]);
     useImperativeHandle(gridRef, () => ({
-        scrollToToday: (animated = true) => {
-            const home = layoutTable[monthsBack];
-            const page = months[monthsBack];
-            if (!home)
-                return;
-            // Land today's own week as the SECOND visible row, not flush at
-            // the very top -- one row of context above it, same rule the
-            // year-overview picker already follows landing on an anchor
-            // month (on request). No row above WITHIN this month (today's
-            // week is the month's first) falls back to the plain month-top
-            // offset -- reaching into the previous month's own last row for
-            // a "row above" isn't worth the complexity for a landing that
-            // already reads fine flush at a month boundary.
-            const weekIdx = page
-                ? Math.floor((page.firstColOffset + (anchorOrdRef.current - page.firstOfMonthOrd)) / 7)
-                : 0;
-            const offset = home.offset + Math.max(0, weekIdx - 1) * (rowHeight + WEEK_GAP);
-            requestAnimationFrame(() => listRef.current?.scrollToOffset({ offset, animated }));
-        },
+        scrollToToday: (animated = true) => goToToday(animated),
         scrollToGregorianMonth: (year, month0) => {
             scrollToFlat(system.flatIndexForGregorian(anchorKey, year, month0), false);
         },
@@ -482,6 +486,7 @@ export function CalendarGrid({ calendarType, layoutRTL, weekStartsOn, monthLabel
         maxMonthsAhead,
         weekStartsOn,
         rowHeight,
+        goToToday,
     ]);
     const getItemLayout = useCallback((_d, index) => ({
         length: layoutTable[index]?.height || 0,
@@ -553,11 +558,7 @@ export function CalendarGrid({ calendarType, layoutRTL, weekStartsOn, monthLabel
                     left: 0,
                     right: 0,
                     alignItems: 'center',
-                }, children: _jsx(Pressable, { onPress: () => {
-                        const home = layoutTable[monthsBack];
-                        if (home)
-                            listRef.current?.scrollToOffset({ offset: home.offset, animated: true });
-                    }, accessibilityRole: "button", style: ({ pressed }) => [
+                }, children: _jsx(Pressable, { onPress: () => goToToday(true), accessibilityRole: "button", style: ({ pressed }) => [
                         {
                             paddingVertical: 9,
                             paddingHorizontal: 16,
