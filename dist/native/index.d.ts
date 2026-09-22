@@ -55,6 +55,7 @@ export interface StatusScreenProps {
     Container?: ComponentType<StatusContainerProps>;
     titleStyle?: StyleProp<TextStyle>;
     messageStyle?: StyleProp<TextStyle>;
+    actionStyle?: StyleProp<ViewStyle>;
     actionTextStyle?: StyleProp<TextStyle>;
     contentContainerStyle?: StyleProp<ViewStyle>;
     testID?: string;
@@ -79,7 +80,7 @@ export interface StatusBannerProps {
  * viewport, and a fixed center would strand `action` off-screen and
  * unreachable.
  */
-export declare function StatusScreen({ title, message, icon, action, colors, rtl, Container, titleStyle, messageStyle, actionTextStyle, contentContainerStyle, testID, }: StatusScreenProps): import("react").JSX.Element;
+export declare function StatusScreen({ title, message, icon, action, colors, rtl, Container, titleStyle, messageStyle, actionStyle, actionTextStyle, contentContainerStyle, testID, }: StatusScreenProps): import("react").JSX.Element;
 /**
  * Non-blocking inline banner for the same kind of state -- rendered
  * alongside content that still works (e.g. cached data) rather than

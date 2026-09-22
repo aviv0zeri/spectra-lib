@@ -8,7 +8,7 @@ import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
  * viewport, and a fixed center would strand `action` off-screen and
  * unreachable.
  */
-export function StatusScreen({ title, message, icon, action, colors, rtl = false, Container, titleStyle, messageStyle, actionTextStyle, contentContainerStyle, testID, }) {
+export function StatusScreen({ title, message, icon, action, colors, rtl = false, Container, titleStyle, messageStyle, actionStyle, actionTextStyle, contentContainerStyle, testID, }) {
     const Wrapper = Container ?? View;
     const writingDirection = rtl ? 'rtl' : 'ltr';
     return (_jsx(ScrollView, { style: styles.screenScroll, keyboardShouldPersistTaps: "handled", contentContainerStyle: [styles.screenContent, contentContainerStyle], testID: testID, children: _jsxs(Wrapper, { children: [icon != null ? _jsx(View, { style: styles.screenIcon, children: icon }) : null, _jsx(Text, { style: [styles.screenTitle, { color: colors.text, writingDirection }, titleStyle], children: title }), message ? (_jsx(Text, { style: [
@@ -19,6 +19,7 @@ export function StatusScreen({ title, message, icon, action, colors, rtl = false
                         styles.screenAction,
                         { backgroundColor: colors.accent },
                         pressed ? styles.screenActionPressed : null,
+                        actionStyle,
                     ], children: _jsx(Text, { style: [styles.screenActionText, { color: colors.onAccent }, actionTextStyle], children: action.label }) })) : null] }) }));
 }
 /**

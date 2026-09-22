@@ -60,6 +60,7 @@ export interface StatusScreenProps {
   Container?: ComponentType<StatusContainerProps>;
   titleStyle?: StyleProp<TextStyle>;
   messageStyle?: StyleProp<TextStyle>;
+  actionStyle?: StyleProp<ViewStyle>;
   actionTextStyle?: StyleProp<TextStyle>;
   contentContainerStyle?: StyleProp<ViewStyle>;
   testID?: string;
@@ -96,6 +97,7 @@ export function StatusScreen({
   Container,
   titleStyle,
   messageStyle,
+  actionStyle,
   actionTextStyle,
   contentContainerStyle,
   testID,
@@ -136,6 +138,7 @@ export function StatusScreen({
               styles.screenAction,
               { backgroundColor: colors.accent },
               pressed ? styles.screenActionPressed : null,
+              actionStyle,
             ]}
           >
             <Text
