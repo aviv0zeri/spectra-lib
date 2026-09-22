@@ -296,15 +296,19 @@ function MonthBlock({
     <View style={{ height: monthBlockHeight(page.weeksCount, rowHeight) }}>
       <View style={{ marginTop: MARKER_GAP }}>
         {Array.from({ length: page.weeksCount }, (_, weekIdx) => {
-          // Trailing filler (days past the end of the month -- the final
-          // week row only) is excluded from the bordered card entirely,
-          // not just blanked inside it -- so the card's own rounded-corner
-          // border ends at the last REAL day instead of tracing an outline
-          // around blank space. dayNum increases monotonically with col, so
-          // the trailing run is always the highest-indexed columns.
-          const lastDayNumInRow = weekIdx * 7 + 6 - page.firstColOffset + 1;
+          // Both LEADING filler (days before day 1, first week only) and
+          // TRAILING filler (days past the end of the month, final week
+          // only) are excluded from the bordered card entirely -- not just
+          // washed/blanked inside it -- so the card's own rounded-corner
+          // border only ever wraps real days, never traces an outline
+          // through the "not this month" padding on either side. dayNum
+          // increases monotonically with col, so each filler run is always
+          // a contiguous block of the lowest- or highest-indexed columns.
+          const firstDayNumInRow = weekIdx * 7 - page.firstColOffset + 1;
+          const leadingCount = Math.max(0, Math.min(7, 1 - firstDayNumInRow));
+          const lastDayNumInRow = firstDayNumInRow + 6;
           const trailingCount = Math.max(0, Math.min(7, lastDayNumInRow - page.daysInMonth));
-          const cardColCount = 7 - trailingCount;
+          const realCount = 7 - leadingCount - trailingCount;
           return (
           <View
             key={weekIdx}
@@ -315,17 +319,24 @@ function MonthBlock({
               direction: layoutRTL ? 'rtl' : 'ltr',
             }}
           >
-            {/* The week is one rounded card; its overflow clips the end cells'
-                fills to the rounded corners, and the day cells inside are
-                divided by hairlines rather than gaps -- so neighbouring-month
-                greys sit flush with no white seam between them. Trailing
-                filler cells (below, a sibling of this card) sit OUTSIDE it
-                entirely -- plain, borderless, blended with the page -- so an
-                "erased" month tail has no border tracing through it. */}
-            {cardColCount > 0 ? (
+            {/* The week is one rounded card holding only real days; the day
+                cells inside are divided by hairlines rather than gaps.
+                Leading/trailing filler for this row (below, plain siblings
+                of the card) sits OUTSIDE it entirely -- grey-washed or
+                blank, but always borderless -- so neighbouring-month
+                padding never reads as a boxed-in cell (on request
+                2026-09-22: contiguous greys "mixed without borders"). */}
+            {leadingCount > 0 ? (
+              <View style={{ flex: leadingCount, flexDirection: 'row' }}>
+                {Array.from({ length: leadingCount }, (_, i) => (
+                  <View key={i} style={{ flex: 1, backgroundColor: `${colors.rim}55` }} />
+                ))}
+              </View>
+            ) : null}
+            {realCount > 0 ? (
             <View
               style={{
-                flex: cardColCount,
+                flex: realCount,
                 flexDirection: 'row',
                 direction: layoutRTL ? 'rtl' : 'ltr',
                 backgroundColor: colors.panel,
@@ -335,42 +346,27 @@ function MonthBlock({
                 overflow: 'hidden',
               }}
             >
-              {Array.from({ length: cardColCount }, (_, col) => {
+              {Array.from({ length: realCount }, (_, i) => {
+                const col = leadingCount + i;
                 const flatIdx = weekIdx * 7 + col;
                 const dayNum = flatIdx - page.firstColOffset + 1;
                 const isSaturday = weekday(col) === SATURDAY;
                 // A hairline border is a PHYSICAL left/right edge -- it does
                 // NOT mirror with `direction`, only the row's child ORDER
                 // does. Under RTL the array is rendered right-to-left, so
-                // the array's own first/last index no longer sit at the
-                // card's visual left edge: col 0 lands at the visual RIGHT
-                // now, col (cardColCount - 1) at the visual LEFT -- the
-                // card's own true left edge now that trailing columns have
-                // been split off into their own sibling, NOT column 6 once
-                // trailingCount > 0. Excluding whichever index sits at the
+                // this subset's own first/last index no longer sit at the
+                // card's visual left edge: index col=leadingCount lands at
+                // the visual RIGHT, col=(leadingCount + realCount - 1) at
+                // the visual LEFT -- the card's own true left edge now that
+                // filler columns on both ends have been split off into
+                // their own siblings. Excluding whichever index sits at the
                 // ACTUAL leftmost visual position fixes both ends for
                 // either direction.
-                const leftmostCol = layoutRTL ? cardColCount - 1 : 0;
+                const leftmostCol = layoutRTL ? leadingCount + realCount - 1 : leadingCount;
                 const divider =
                   col !== leftmostCol
                     ? { borderLeftWidth: StyleSheet.hairlineWidth, borderLeftColor: colors.rim }
                     : null;
-                if (dayNum < 1) {
-                  // A LEADING filler (before day 1) wears the faint grey wash
-                  // that marks "not this month". Contiguous leading fillers
-                  // still merge into one band (no inter-cell gaps in the
-                  // card).
-                  return (
-                    <View
-                      key={col}
-                      style={[
-                        { flex: 1 },
-                        { backgroundColor: `${colors.rim}55` },
-                        divider as ViewStyle,
-                      ]}
-                    />
-                  );
-                }
                 const ord = page.firstOfMonthOrd + (dayNum - 1);
                 const date =
                   page.isHebrewMonth === true
@@ -544,7 +540,7 @@ function MonthBlock({
             {trailingCount > 0 ? (
               <View style={{ flex: trailingCount, flexDirection: 'row' }}>
                 {Array.from({ length: trailingCount }, (_, i) => (
-                  <View key={cardColCount + i} style={{ flex: 1 }} />
+                  <View key={i} style={{ flex: 1 }} />
                 ))}
               </View>
             ) : null}

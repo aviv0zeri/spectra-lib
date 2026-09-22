@@ -57,22 +57,26 @@ function monthBlockHeight(weeksCount, rowHeight) {
 function MonthBlock({ page, system, rowHeight, weekStartsOn, layoutRTL, todayOrd, colors, fontFamily, slots, }) {
     const weekday = (col) => (weekStartsOn + col) % 7;
     return (_jsx(View, { style: { height: monthBlockHeight(page.weeksCount, rowHeight) }, children: _jsx(View, { style: { marginTop: MARKER_GAP }, children: Array.from({ length: page.weeksCount }, (_, weekIdx) => {
-                // Trailing filler (days past the end of the month -- the final
-                // week row only) is excluded from the bordered card entirely,
-                // not just blanked inside it -- so the card's own rounded-corner
-                // border ends at the last REAL day instead of tracing an outline
-                // around blank space. dayNum increases monotonically with col, so
-                // the trailing run is always the highest-indexed columns.
-                const lastDayNumInRow = weekIdx * 7 + 6 - page.firstColOffset + 1;
+                // Both LEADING filler (days before day 1, first week only) and
+                // TRAILING filler (days past the end of the month, final week
+                // only) are excluded from the bordered card entirely -- not just
+                // washed/blanked inside it -- so the card's own rounded-corner
+                // border only ever wraps real days, never traces an outline
+                // through the "not this month" padding on either side. dayNum
+                // increases monotonically with col, so each filler run is always
+                // a contiguous block of the lowest- or highest-indexed columns.
+                const firstDayNumInRow = weekIdx * 7 - page.firstColOffset + 1;
+                const leadingCount = Math.max(0, Math.min(7, 1 - firstDayNumInRow));
+                const lastDayNumInRow = firstDayNumInRow + 6;
                 const trailingCount = Math.max(0, Math.min(7, lastDayNumInRow - page.daysInMonth));
-                const cardColCount = 7 - trailingCount;
+                const realCount = 7 - leadingCount - trailingCount;
                 return (_jsxs(View, { style: {
                         height: rowHeight,
                         marginBottom: weekIdx === page.weeksCount - 1 ? 0 : WEEK_GAP,
                         flexDirection: 'row',
                         direction: layoutRTL ? 'rtl' : 'ltr',
-                    }, children: [cardColCount > 0 ? (_jsx(View, { style: {
-                                flex: cardColCount,
+                    }, children: [leadingCount > 0 ? (_jsx(View, { style: { flex: leadingCount, flexDirection: 'row' }, children: Array.from({ length: leadingCount }, (_, i) => (_jsx(View, { style: { flex: 1, backgroundColor: `${colors.rim}55` } }, i))) })) : null, realCount > 0 ? (_jsx(View, { style: {
+                                flex: realCount,
                                 flexDirection: 'row',
                                 direction: layoutRTL ? 'rtl' : 'ltr',
                                 backgroundColor: colors.panel,
@@ -80,36 +84,26 @@ function MonthBlock({ page, system, rowHeight, weekStartsOn, layoutRTL, todayOrd
                                 borderWidth: StyleSheet.hairlineWidth,
                                 borderColor: colors.rim,
                                 overflow: 'hidden',
-                            }, children: Array.from({ length: cardColCount }, (_, col) => {
+                            }, children: Array.from({ length: realCount }, (_, i) => {
+                                const col = leadingCount + i;
                                 const flatIdx = weekIdx * 7 + col;
                                 const dayNum = flatIdx - page.firstColOffset + 1;
                                 const isSaturday = weekday(col) === SATURDAY;
                                 // A hairline border is a PHYSICAL left/right edge -- it does
                                 // NOT mirror with `direction`, only the row's child ORDER
                                 // does. Under RTL the array is rendered right-to-left, so
-                                // the array's own first/last index no longer sit at the
-                                // card's visual left edge: col 0 lands at the visual RIGHT
-                                // now, col (cardColCount - 1) at the visual LEFT -- the
-                                // card's own true left edge now that trailing columns have
-                                // been split off into their own sibling, NOT column 6 once
-                                // trailingCount > 0. Excluding whichever index sits at the
+                                // this subset's own first/last index no longer sit at the
+                                // card's visual left edge: index col=leadingCount lands at
+                                // the visual RIGHT, col=(leadingCount + realCount - 1) at
+                                // the visual LEFT -- the card's own true left edge now that
+                                // filler columns on both ends have been split off into
+                                // their own siblings. Excluding whichever index sits at the
                                 // ACTUAL leftmost visual position fixes both ends for
                                 // either direction.
-                                const leftmostCol = layoutRTL ? cardColCount - 1 : 0;
+                                const leftmostCol = layoutRTL ? leadingCount + realCount - 1 : leadingCount;
                                 const divider = col !== leftmostCol
                                     ? { borderLeftWidth: StyleSheet.hairlineWidth, borderLeftColor: colors.rim }
                                     : null;
-                                if (dayNum < 1) {
-                                    // A LEADING filler (before day 1) wears the faint grey wash
-                                    // that marks "not this month". Contiguous leading fillers
-                                    // still merge into one band (no inter-cell gaps in the
-                                    // card).
-                                    return (_jsx(View, { style: [
-                                            { flex: 1 },
-                                            { backgroundColor: `${colors.rim}55` },
-                                            divider,
-                                        ] }, col));
-                                }
                                 const ord = page.firstOfMonthOrd + (dayNum - 1);
                                 const date = page.isHebrewMonth === true
                                     ? dateFromLocalDayOrdinal(ord)
@@ -222,7 +216,7 @@ function MonthBlock({ page, system, rowHeight, weekStartsOn, layoutRTL, todayOrd
                                                     { position: 'absolute', top: 2 },
                                                     layoutRTL ? { left: 2 } : { right: 2 },
                                                 ], children: slots.renderDayBadge(day) })) : null] }) }, col));
-                            }) })) : null, trailingCount > 0 ? (_jsx(View, { style: { flex: trailingCount, flexDirection: 'row' }, children: Array.from({ length: trailingCount }, (_, i) => (_jsx(View, { style: { flex: 1 } }, cardColCount + i))) })) : null, slots.renderWeekOverlay ? (_jsx(View, { pointerEvents: "box-none", style: StyleSheet.absoluteFill, children: slots.renderWeekOverlay(page, weekIdx, rowHeight) })) : null] }, weekIdx));
+                            }) })) : null, trailingCount > 0 ? (_jsx(View, { style: { flex: trailingCount, flexDirection: 'row' }, children: Array.from({ length: trailingCount }, (_, i) => (_jsx(View, { style: { flex: 1 } }, i))) })) : null, slots.renderWeekOverlay ? (_jsx(View, { pointerEvents: "box-none", style: StyleSheet.absoluteFill, children: slots.renderWeekOverlay(page, weekIdx, rowHeight) })) : null] }, weekIdx));
             }) }) }));
 }
 /** The "today" disc, breathing -- a slow scale+opacity pulse behind the number. */
