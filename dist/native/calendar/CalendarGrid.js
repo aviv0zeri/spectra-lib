@@ -90,7 +90,14 @@ function MonthBlock({ page, system, rowHeight, weekStartsOn, layoutRTL, todayOrd
                         marginBottom: weekIdx === page.weeksCount - 1 ? 0 : WEEK_GAP,
                         flexDirection: 'row',
                         direction: layoutRTL ? 'rtl' : 'ltr',
-                    }, children: [leadingCount > 0 ? (_jsx(Pressable, { onPress: onFillerPress, style: { flex: leadingCount, flexDirection: 'row' }, children: Array.from({ length: leadingCount }, (_, i) => (_jsx(View, { style: { flex: 1, backgroundColor: `${colors.rim}33` } }, i))) })) : null, realCount > 0 ? (_jsx(View, { style: {
+                    }, children: [leadingCount > 0 ? (_jsx(Pressable, { onPress: onFillerPress, style: {
+                                flex: leadingCount,
+                                flexDirection: 'row',
+                                borderRadius: 14,
+                                borderWidth: StyleSheet.hairlineWidth,
+                                borderColor: `${colors.rim}55`,
+                                overflow: 'hidden',
+                            }, children: Array.from({ length: leadingCount }, (_, i) => (_jsx(View, { style: { flex: 1, backgroundColor: `${colors.rim}33` } }, i))) })) : null, realCount > 0 ? (_jsx(View, { style: {
                                 flex: realCount,
                                 flexDirection: 'row',
                                 direction: layoutRTL ? 'rtl' : 'ltr',

@@ -344,12 +344,25 @@ function MonthBlock({
             {/* The week is one rounded card holding only real days; the day
                 cells inside are divided by hairlines rather than gaps.
                 Leading/trailing filler for this row (below, plain siblings
-                of the card) sits OUTSIDE it entirely -- grey-washed or
-                blank, but always borderless -- so neighbouring-month
-                padding never reads as a boxed-in cell (on request
-                2026-09-22: contiguous greys "mixed without borders"). */}
+                of the card) sits OUTSIDE it entirely, in its own separate
+                rounded card, rather than inside the real-day card -- so
+                neither one's border traces through the other's content
+                (on request 2026-09-22). The filler card's own border is
+                faded, same as the real-day card's -- brought back after a
+                first pass dropped it entirely ("mixed without borders"
+                meant soften it, not erase it). */}
             {leadingCount > 0 ? (
-              <Pressable onPress={onFillerPress} style={{ flex: leadingCount, flexDirection: 'row' }}>
+              <Pressable
+                onPress={onFillerPress}
+                style={{
+                  flex: leadingCount,
+                  flexDirection: 'row',
+                  borderRadius: 14,
+                  borderWidth: StyleSheet.hairlineWidth,
+                  borderColor: `${colors.rim}55`,
+                  overflow: 'hidden',
+                }}
+              >
                 {Array.from({ length: leadingCount }, (_, i) => (
                   <View key={i} style={{ flex: 1, backgroundColor: `${colors.rim}33` }} />
                 ))}
