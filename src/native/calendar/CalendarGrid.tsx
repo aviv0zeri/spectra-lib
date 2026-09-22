@@ -268,6 +268,7 @@ function MonthBlock({
   todayOrd,
   colors,
   fontFamily,
+  goToToday,
   slots,
 }: {
   page: MonthPage;
@@ -278,6 +279,13 @@ function MonthBlock({
   todayOrd: number;
   colors: CalendarColors;
   fontFamily?: string;
+  /** Double-tapping a filler cell (leading or trailing -- "free"/"erased"
+   * space, never a real day) also jumps to today, same as double-tapping a
+   * muted real day. Filler has no CalendarDay of its own to hand the
+   * consumer's onDayPress/isDayMuted slots, so this is handled locally
+   * instead of routed through them (on request 2026-09-22: "double tap in
+   * free areas... doesn't work"). */
+  goToToday: (animated?: boolean) => void;
   slots: {
     dayBackgroundColor?: DayStyleFn;
     renderDayBackground?: DayNodeFn;
@@ -292,6 +300,20 @@ function MonthBlock({
   };
 }) {
   const weekday = (col: number) => (weekStartsOn + col) % 7;
+  // A second filler tap within 300ms of the first -- anywhere in the
+  // filler, not necessarily the same cell, since it's all one undifferentiated
+  // "free" area -- jumps to today. Matches the real-day double-tap timing
+  // (DOUBLE_TAP_MS) consumers use for their own muted-day handling.
+  const lastFillerTapRef = useRef(0);
+  const onFillerPress = () => {
+    const now = Date.now();
+    if (now - lastFillerTapRef.current < 300) {
+      lastFillerTapRef.current = 0;
+      goToToday(true);
+    } else {
+      lastFillerTapRef.current = now;
+    }
+  };
   return (
     <View style={{ height: monthBlockHeight(page.weeksCount, rowHeight) }}>
       <View style={{ marginTop: MARKER_GAP }}>
@@ -327,11 +349,11 @@ function MonthBlock({
                 padding never reads as a boxed-in cell (on request
                 2026-09-22: contiguous greys "mixed without borders"). */}
             {leadingCount > 0 ? (
-              <View style={{ flex: leadingCount, flexDirection: 'row' }}>
+              <Pressable onPress={onFillerPress} style={{ flex: leadingCount, flexDirection: 'row' }}>
                 {Array.from({ length: leadingCount }, (_, i) => (
-                  <View key={i} style={{ flex: 1, backgroundColor: `${colors.rim}55` }} />
+                  <View key={i} style={{ flex: 1, backgroundColor: `${colors.rim}33` }} />
                 ))}
-              </View>
+              </Pressable>
             ) : null}
             {realCount > 0 ? (
             <View
@@ -342,7 +364,10 @@ function MonthBlock({
                 backgroundColor: colors.panel,
                 borderRadius: 14,
                 borderWidth: StyleSheet.hairlineWidth,
-                borderColor: colors.rim,
+                // Faded, not a crisp line -- the card's edge should read as
+                // a soft boundary against the plain filler beside it, not a
+                // hard-edged box (on request 2026-09-22).
+                borderColor: `${colors.rim}55`,
                 overflow: 'hidden',
               }}
             >
@@ -365,7 +390,7 @@ function MonthBlock({
                 const leftmostCol = layoutRTL ? leadingCount + realCount - 1 : leadingCount;
                 const divider =
                   col !== leftmostCol
-                    ? { borderLeftWidth: StyleSheet.hairlineWidth, borderLeftColor: colors.rim }
+                    ? { borderLeftWidth: StyleSheet.hairlineWidth, borderLeftColor: `${colors.rim}55` }
                     : null;
                 const ord = page.firstOfMonthOrd + (dayNum - 1);
                 const date =
@@ -538,11 +563,11 @@ function MonthBlock({
             </View>
             ) : null}
             {trailingCount > 0 ? (
-              <View style={{ flex: trailingCount, flexDirection: 'row' }}>
+              <Pressable onPress={onFillerPress} style={{ flex: trailingCount, flexDirection: 'row' }}>
                 {Array.from({ length: trailingCount }, (_, i) => (
                   <View key={i} style={{ flex: 1 }} />
                 ))}
-              </View>
+              </Pressable>
             ) : null}
             {slots.renderWeekOverlay ? (
               <View pointerEvents="box-none" style={StyleSheet.absoluteFill}>
@@ -963,10 +988,11 @@ export function CalendarGrid({
         todayOrd={anchorOrd}
         colors={colors}
         fontFamily={fontFamily}
+        goToToday={goToToday}
         slots={slotsRef.current}
       />
     ),
-    [system, rowHeight, weekStartsOn, layoutRTL, anchorOrd, colors, fontFamily],
+    [system, rowHeight, weekStartsOn, layoutRTL, anchorOrd, colors, fontFamily, goToToday],
   );
 
   const weekdayOrder = Array.from({ length: 7 }, (_, i) => (weekStartsOn + i) % 7);

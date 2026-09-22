@@ -54,8 +54,23 @@ function monthBlockHeight(weeksCount, rowHeight) {
  * One month's weeks. A memo-friendly pure render helper -- everything it needs
  * comes in as arguments so it recomputes only when the page or a slot changes.
  */
-function MonthBlock({ page, system, rowHeight, weekStartsOn, layoutRTL, todayOrd, colors, fontFamily, slots, }) {
+function MonthBlock({ page, system, rowHeight, weekStartsOn, layoutRTL, todayOrd, colors, fontFamily, goToToday, slots, }) {
     const weekday = (col) => (weekStartsOn + col) % 7;
+    // A second filler tap within 300ms of the first -- anywhere in the
+    // filler, not necessarily the same cell, since it's all one undifferentiated
+    // "free" area -- jumps to today. Matches the real-day double-tap timing
+    // (DOUBLE_TAP_MS) consumers use for their own muted-day handling.
+    const lastFillerTapRef = useRef(0);
+    const onFillerPress = () => {
+        const now = Date.now();
+        if (now - lastFillerTapRef.current < 300) {
+            lastFillerTapRef.current = 0;
+            goToToday(true);
+        }
+        else {
+            lastFillerTapRef.current = now;
+        }
+    };
     return (_jsx(View, { style: { height: monthBlockHeight(page.weeksCount, rowHeight) }, children: _jsx(View, { style: { marginTop: MARKER_GAP }, children: Array.from({ length: page.weeksCount }, (_, weekIdx) => {
                 // Both LEADING filler (days before day 1, first week only) and
                 // TRAILING filler (days past the end of the month, final week
@@ -75,14 +90,17 @@ function MonthBlock({ page, system, rowHeight, weekStartsOn, layoutRTL, todayOrd
                         marginBottom: weekIdx === page.weeksCount - 1 ? 0 : WEEK_GAP,
                         flexDirection: 'row',
                         direction: layoutRTL ? 'rtl' : 'ltr',
-                    }, children: [leadingCount > 0 ? (_jsx(View, { style: { flex: leadingCount, flexDirection: 'row' }, children: Array.from({ length: leadingCount }, (_, i) => (_jsx(View, { style: { flex: 1, backgroundColor: `${colors.rim}55` } }, i))) })) : null, realCount > 0 ? (_jsx(View, { style: {
+                    }, children: [leadingCount > 0 ? (_jsx(Pressable, { onPress: onFillerPress, style: { flex: leadingCount, flexDirection: 'row' }, children: Array.from({ length: leadingCount }, (_, i) => (_jsx(View, { style: { flex: 1, backgroundColor: `${colors.rim}33` } }, i))) })) : null, realCount > 0 ? (_jsx(View, { style: {
                                 flex: realCount,
                                 flexDirection: 'row',
                                 direction: layoutRTL ? 'rtl' : 'ltr',
                                 backgroundColor: colors.panel,
                                 borderRadius: 14,
                                 borderWidth: StyleSheet.hairlineWidth,
-                                borderColor: colors.rim,
+                                // Faded, not a crisp line -- the card's edge should read as
+                                // a soft boundary against the plain filler beside it, not a
+                                // hard-edged box (on request 2026-09-22).
+                                borderColor: `${colors.rim}55`,
                                 overflow: 'hidden',
                             }, children: Array.from({ length: realCount }, (_, i) => {
                                 const col = leadingCount + i;
@@ -102,7 +120,7 @@ function MonthBlock({ page, system, rowHeight, weekStartsOn, layoutRTL, todayOrd
                                 // either direction.
                                 const leftmostCol = layoutRTL ? leadingCount + realCount - 1 : leadingCount;
                                 const divider = col !== leftmostCol
-                                    ? { borderLeftWidth: StyleSheet.hairlineWidth, borderLeftColor: colors.rim }
+                                    ? { borderLeftWidth: StyleSheet.hairlineWidth, borderLeftColor: `${colors.rim}55` }
                                     : null;
                                 const ord = page.firstOfMonthOrd + (dayNum - 1);
                                 const date = page.isHebrewMonth === true
@@ -216,7 +234,7 @@ function MonthBlock({ page, system, rowHeight, weekStartsOn, layoutRTL, todayOrd
                                                     { position: 'absolute', top: 2 },
                                                     layoutRTL ? { left: 2 } : { right: 2 },
                                                 ], children: slots.renderDayBadge(day) })) : null] }) }, col));
-                            }) })) : null, trailingCount > 0 ? (_jsx(View, { style: { flex: trailingCount, flexDirection: 'row' }, children: Array.from({ length: trailingCount }, (_, i) => (_jsx(View, { style: { flex: 1 } }, i))) })) : null, slots.renderWeekOverlay ? (_jsx(View, { pointerEvents: "box-none", style: StyleSheet.absoluteFill, children: slots.renderWeekOverlay(page, weekIdx, rowHeight) })) : null] }, weekIdx));
+                            }) })) : null, trailingCount > 0 ? (_jsx(Pressable, { onPress: onFillerPress, style: { flex: trailingCount, flexDirection: 'row' }, children: Array.from({ length: trailingCount }, (_, i) => (_jsx(View, { style: { flex: 1 } }, i))) })) : null, slots.renderWeekOverlay ? (_jsx(View, { pointerEvents: "box-none", style: StyleSheet.absoluteFill, children: slots.renderWeekOverlay(page, weekIdx, rowHeight) })) : null] }, weekIdx));
             }) }) }));
 }
 /** The "today" disc, breathing -- a slow scale+opacity pulse behind the number. */
@@ -515,7 +533,7 @@ export function CalendarGrid({ calendarType, layoutRTL, weekStartsOn, monthLabel
         onDayPress,
     };
     const listExtra = useMemo(() => ({ anchorOrd, extraData }), [anchorOrd, extraData]);
-    const renderItem = useCallback(({ item }) => (_jsx(MonthBlock, { page: item, system: system, rowHeight: rowHeight, weekStartsOn: weekStartsOn, layoutRTL: layoutRTL, todayOrd: anchorOrd, colors: colors, fontFamily: fontFamily, slots: slotsRef.current })), [system, rowHeight, weekStartsOn, layoutRTL, anchorOrd, colors, fontFamily]);
+    const renderItem = useCallback(({ item }) => (_jsx(MonthBlock, { page: item, system: system, rowHeight: rowHeight, weekStartsOn: weekStartsOn, layoutRTL: layoutRTL, todayOrd: anchorOrd, colors: colors, fontFamily: fontFamily, goToToday: goToToday, slots: slotsRef.current })), [system, rowHeight, weekStartsOn, layoutRTL, anchorOrd, colors, fontFamily, goToToday]);
     const weekdayOrder = Array.from({ length: 7 }, (_, i) => (weekStartsOn + i) % 7);
     return (_jsxs(View, { style: { flex: 1 }, testID: testID, children: [_jsxs(Pressable, { onPress: onTitlePress, disabled: !onTitlePress, accessibilityRole: onTitlePress ? 'button' : undefined, style: {
                     paddingHorizontal: 16,
