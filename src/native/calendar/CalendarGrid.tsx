@@ -295,21 +295,37 @@ function MonthBlock({
   return (
     <View style={{ height: monthBlockHeight(page.weeksCount, rowHeight) }}>
       <View style={{ marginTop: MARKER_GAP }}>
-        {Array.from({ length: page.weeksCount }, (_, weekIdx) => (
+        {Array.from({ length: page.weeksCount }, (_, weekIdx) => {
+          // Trailing filler (days past the end of the month -- the final
+          // week row only) is excluded from the bordered card entirely,
+          // not just blanked inside it -- so the card's own rounded-corner
+          // border ends at the last REAL day instead of tracing an outline
+          // around blank space. dayNum increases monotonically with col, so
+          // the trailing run is always the highest-indexed columns.
+          const lastDayNumInRow = weekIdx * 7 + 6 - page.firstColOffset + 1;
+          const trailingCount = Math.max(0, Math.min(7, lastDayNumInRow - page.daysInMonth));
+          const cardColCount = 7 - trailingCount;
+          return (
           <View
             key={weekIdx}
             style={{
               height: rowHeight,
               marginBottom: weekIdx === page.weeksCount - 1 ? 0 : WEEK_GAP,
+              flexDirection: 'row',
+              direction: layoutRTL ? 'rtl' : 'ltr',
             }}
           >
             {/* The week is one rounded card; its overflow clips the end cells'
                 fills to the rounded corners, and the day cells inside are
                 divided by hairlines rather than gaps -- so neighbouring-month
-                greys sit flush with no white seam between them. */}
+                greys sit flush with no white seam between them. Trailing
+                filler cells (below, a sibling of this card) sit OUTSIDE it
+                entirely -- plain, borderless, blended with the page -- so an
+                "erased" month tail has no border tracing through it. */}
+            {cardColCount > 0 ? (
             <View
               style={{
-                flex: 1,
+                flex: cardColCount,
                 flexDirection: 'row',
                 direction: layoutRTL ? 'rtl' : 'ltr',
                 backgroundColor: colors.panel,
@@ -319,7 +335,7 @@ function MonthBlock({
                 overflow: 'hidden',
               }}
             >
-              {Array.from({ length: 7 }, (_, col) => {
+              {Array.from({ length: cardColCount }, (_, col) => {
                 const flatIdx = weekIdx * 7 + col;
                 const dayNum = flatIdx - page.firstColOffset + 1;
                 const isSaturday = weekday(col) === SATURDAY;
@@ -327,38 +343,30 @@ function MonthBlock({
                 // NOT mirror with `direction`, only the row's child ORDER
                 // does. Under RTL the array is rendered right-to-left, so
                 // the array's own first/last index no longer sit at the
-                // row's visual left edge: col 0 lands at the visual RIGHT
-                // now, col 6 at the visual LEFT. Excluding col 0 (as LTR
-                // correctly does, to leave the row's own left edge bare)
-                // left the wrong pair undivided under RTL -- the boundary
-                // between the array's col 0 and col 1, which after the
-                // mirror are the row's rightmost two cells -- while col 6
-                // (now the true leftmost, needing no divider) kept one it
-                // no longer touches anything to the left of. Excluding
-                // whichever index sits at the ACTUAL leftmost visual
-                // position fixes both ends for either direction.
-                const leftmostCol = layoutRTL ? 6 : 0;
+                // card's visual left edge: col 0 lands at the visual RIGHT
+                // now, col (cardColCount - 1) at the visual LEFT -- the
+                // card's own true left edge now that trailing columns have
+                // been split off into their own sibling, NOT column 6 once
+                // trailingCount > 0. Excluding whichever index sits at the
+                // ACTUAL leftmost visual position fixes both ends for
+                // either direction.
+                const leftmostCol = layoutRTL ? cardColCount - 1 : 0;
                 const divider =
                   col !== leftmostCol
                     ? { borderLeftWidth: StyleSheet.hairlineWidth, borderLeftColor: colors.rim }
                     : null;
-                if (dayNum < 1 || dayNum > page.daysInMonth) {
+                if (dayNum < 1) {
                   // A LEADING filler (before day 1) wears the faint grey wash
-                  // that marks "not this month"; a TRAILING filler (after the
-                  // last day) is erased -- blank, no wash, no divider -- so the
-                  // month ends clean instead of on a grey block. Contiguous
-                  // leading fillers still merge into one band (no inter-cell
-                  // gaps in the card).
-                  const trailing = dayNum > page.daysInMonth;
+                  // that marks "not this month". Contiguous leading fillers
+                  // still merge into one band (no inter-cell gaps in the
+                  // card).
                   return (
                     <View
                       key={col}
                       style={[
                         { flex: 1 },
-                        trailing
-                          ? { backgroundColor: colors.background ?? 'transparent' }
-                          : { backgroundColor: `${colors.rim}55` },
-                        trailing ? null : (divider as ViewStyle),
+                        { backgroundColor: `${colors.rim}55` },
+                        divider as ViewStyle,
                       ]}
                     />
                   );
@@ -532,13 +540,22 @@ function MonthBlock({
                 );
               })}
             </View>
+            ) : null}
+            {trailingCount > 0 ? (
+              <View style={{ flex: trailingCount, flexDirection: 'row' }}>
+                {Array.from({ length: trailingCount }, (_, i) => (
+                  <View key={cardColCount + i} style={{ flex: 1 }} />
+                ))}
+              </View>
+            ) : null}
             {slots.renderWeekOverlay ? (
               <View pointerEvents="box-none" style={StyleSheet.absoluteFill}>
                 {slots.renderWeekOverlay(page, weekIdx, rowHeight)}
               </View>
             ) : null}
           </View>
-        ))}
+          );
+        })}
       </View>
     </View>
   );

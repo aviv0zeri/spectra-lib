@@ -56,169 +56,174 @@ function monthBlockHeight(weeksCount, rowHeight) {
  */
 function MonthBlock({ page, system, rowHeight, weekStartsOn, layoutRTL, todayOrd, colors, fontFamily, slots, }) {
     const weekday = (col) => (weekStartsOn + col) % 7;
-    return (_jsx(View, { style: { height: monthBlockHeight(page.weeksCount, rowHeight) }, children: _jsx(View, { style: { marginTop: MARKER_GAP }, children: Array.from({ length: page.weeksCount }, (_, weekIdx) => (_jsxs(View, { style: {
-                    height: rowHeight,
-                    marginBottom: weekIdx === page.weeksCount - 1 ? 0 : WEEK_GAP,
-                }, children: [_jsx(View, { style: {
-                            flex: 1,
-                            flexDirection: 'row',
-                            direction: layoutRTL ? 'rtl' : 'ltr',
-                            backgroundColor: colors.panel,
-                            borderRadius: 14,
-                            borderWidth: StyleSheet.hairlineWidth,
-                            borderColor: colors.rim,
-                            overflow: 'hidden',
-                        }, children: Array.from({ length: 7 }, (_, col) => {
-                            const flatIdx = weekIdx * 7 + col;
-                            const dayNum = flatIdx - page.firstColOffset + 1;
-                            const isSaturday = weekday(col) === SATURDAY;
-                            // A hairline border is a PHYSICAL left/right edge -- it does
-                            // NOT mirror with `direction`, only the row's child ORDER
-                            // does. Under RTL the array is rendered right-to-left, so
-                            // the array's own first/last index no longer sit at the
-                            // row's visual left edge: col 0 lands at the visual RIGHT
-                            // now, col 6 at the visual LEFT. Excluding col 0 (as LTR
-                            // correctly does, to leave the row's own left edge bare)
-                            // left the wrong pair undivided under RTL -- the boundary
-                            // between the array's col 0 and col 1, which after the
-                            // mirror are the row's rightmost two cells -- while col 6
-                            // (now the true leftmost, needing no divider) kept one it
-                            // no longer touches anything to the left of. Excluding
-                            // whichever index sits at the ACTUAL leftmost visual
-                            // position fixes both ends for either direction.
-                            const leftmostCol = layoutRTL ? 6 : 0;
-                            const divider = col !== leftmostCol
-                                ? { borderLeftWidth: StyleSheet.hairlineWidth, borderLeftColor: colors.rim }
-                                : null;
-                            if (dayNum < 1 || dayNum > page.daysInMonth) {
-                                // A LEADING filler (before day 1) wears the faint grey wash
-                                // that marks "not this month"; a TRAILING filler (after the
-                                // last day) is erased -- blank, no wash, no divider -- so the
-                                // month ends clean instead of on a grey block. Contiguous
-                                // leading fillers still merge into one band (no inter-cell
-                                // gaps in the card).
-                                const trailing = dayNum > page.daysInMonth;
-                                return (_jsx(View, { style: [
+    return (_jsx(View, { style: { height: monthBlockHeight(page.weeksCount, rowHeight) }, children: _jsx(View, { style: { marginTop: MARKER_GAP }, children: Array.from({ length: page.weeksCount }, (_, weekIdx) => {
+                // Trailing filler (days past the end of the month -- the final
+                // week row only) is excluded from the bordered card entirely,
+                // not just blanked inside it -- so the card's own rounded-corner
+                // border ends at the last REAL day instead of tracing an outline
+                // around blank space. dayNum increases monotonically with col, so
+                // the trailing run is always the highest-indexed columns.
+                const lastDayNumInRow = weekIdx * 7 + 6 - page.firstColOffset + 1;
+                const trailingCount = Math.max(0, Math.min(7, lastDayNumInRow - page.daysInMonth));
+                const cardColCount = 7 - trailingCount;
+                return (_jsxs(View, { style: {
+                        height: rowHeight,
+                        marginBottom: weekIdx === page.weeksCount - 1 ? 0 : WEEK_GAP,
+                        flexDirection: 'row',
+                        direction: layoutRTL ? 'rtl' : 'ltr',
+                    }, children: [cardColCount > 0 ? (_jsx(View, { style: {
+                                flex: cardColCount,
+                                flexDirection: 'row',
+                                direction: layoutRTL ? 'rtl' : 'ltr',
+                                backgroundColor: colors.panel,
+                                borderRadius: 14,
+                                borderWidth: StyleSheet.hairlineWidth,
+                                borderColor: colors.rim,
+                                overflow: 'hidden',
+                            }, children: Array.from({ length: cardColCount }, (_, col) => {
+                                const flatIdx = weekIdx * 7 + col;
+                                const dayNum = flatIdx - page.firstColOffset + 1;
+                                const isSaturday = weekday(col) === SATURDAY;
+                                // A hairline border is a PHYSICAL left/right edge -- it does
+                                // NOT mirror with `direction`, only the row's child ORDER
+                                // does. Under RTL the array is rendered right-to-left, so
+                                // the array's own first/last index no longer sit at the
+                                // card's visual left edge: col 0 lands at the visual RIGHT
+                                // now, col (cardColCount - 1) at the visual LEFT -- the
+                                // card's own true left edge now that trailing columns have
+                                // been split off into their own sibling, NOT column 6 once
+                                // trailingCount > 0. Excluding whichever index sits at the
+                                // ACTUAL leftmost visual position fixes both ends for
+                                // either direction.
+                                const leftmostCol = layoutRTL ? cardColCount - 1 : 0;
+                                const divider = col !== leftmostCol
+                                    ? { borderLeftWidth: StyleSheet.hairlineWidth, borderLeftColor: colors.rim }
+                                    : null;
+                                if (dayNum < 1) {
+                                    // A LEADING filler (before day 1) wears the faint grey wash
+                                    // that marks "not this month". Contiguous leading fillers
+                                    // still merge into one band (no inter-cell gaps in the
+                                    // card).
+                                    return (_jsx(View, { style: [
+                                            { flex: 1 },
+                                            { backgroundColor: `${colors.rim}55` },
+                                            divider,
+                                        ] }, col));
+                                }
+                                const ord = page.firstOfMonthOrd + (dayNum - 1);
+                                const date = page.isHebrewMonth === true
+                                    ? dateFromLocalDayOrdinal(ord)
+                                    : new Date(page.year, page.month, dayNum);
+                                const labels = system.dayLabels(page, dayNum, date);
+                                const day = {
+                                    ordinal: ord,
+                                    date,
+                                    gregorianDayNum: system.gregorianDayNum(page, dayNum, date),
+                                    pageDayNum: dayNum,
+                                    bigLabel: labels.big,
+                                    subLabel: labels.sub,
+                                    monthMarker: dayNum === 1 ? system.monthMarker(page) : null,
+                                    isToday: ord === todayOrd,
+                                    isPast: ord < todayOrd,
+                                    inMonth: true,
+                                    weekIndex: weekIdx,
+                                    colIndex: col,
+                                    page,
+                                };
+                                const bg = slots.dayBackgroundColor?.(day);
+                                const background = slots.renderDayBackground?.(day);
+                                const ring = slots.dayRingStyle?.(day);
+                                const disabled = slots.isDayDisabled?.(day) ?? false;
+                                const muted = slots.isDayMuted?.(day) ?? false;
+                                // The consumer's below-the-number content (a holiday label,
+                                // say) WINS the one small subtitle slot: the cell has room for
+                                // one line, not two, so when it returns something the
+                                // formation's own sub-label / month marker steps aside.
+                                const below = slots.renderDayBelow?.(day);
+                                return (_jsx(Pressable, { disabled: disabled, onPress: slots.onDayPress ? () => slots.onDayPress?.(day) : undefined, accessibilityLabel: [
+                                        day.bigLabel,
+                                        day.bigLabel === String(day.gregorianDayNum) ? null : String(day.gregorianDayNum),
+                                    ]
+                                        .filter(Boolean)
+                                        .join(', '), style: ({ pressed }) => [
                                         { flex: 1 },
-                                        trailing
-                                            ? { backgroundColor: colors.background ?? 'transparent' }
-                                            : { backgroundColor: `${colors.rim}55` },
-                                        trailing ? null : divider,
-                                    ] }, col));
-                            }
-                            const ord = page.firstOfMonthOrd + (dayNum - 1);
-                            const date = page.isHebrewMonth === true
-                                ? dateFromLocalDayOrdinal(ord)
-                                : new Date(page.year, page.month, dayNum);
-                            const labels = system.dayLabels(page, dayNum, date);
-                            const day = {
-                                ordinal: ord,
-                                date,
-                                gregorianDayNum: system.gregorianDayNum(page, dayNum, date),
-                                pageDayNum: dayNum,
-                                bigLabel: labels.big,
-                                subLabel: labels.sub,
-                                monthMarker: dayNum === 1 ? system.monthMarker(page) : null,
-                                isToday: ord === todayOrd,
-                                isPast: ord < todayOrd,
-                                inMonth: true,
-                                weekIndex: weekIdx,
-                                colIndex: col,
-                                page,
-                            };
-                            const bg = slots.dayBackgroundColor?.(day);
-                            const background = slots.renderDayBackground?.(day);
-                            const ring = slots.dayRingStyle?.(day);
-                            const disabled = slots.isDayDisabled?.(day) ?? false;
-                            const muted = slots.isDayMuted?.(day) ?? false;
-                            // The consumer's below-the-number content (a holiday label,
-                            // say) WINS the one small subtitle slot: the cell has room for
-                            // one line, not two, so when it returns something the
-                            // formation's own sub-label / month marker steps aside.
-                            const below = slots.renderDayBelow?.(day);
-                            return (_jsx(Pressable, { disabled: disabled, onPress: slots.onDayPress ? () => slots.onDayPress?.(day) : undefined, accessibilityLabel: [
-                                    day.bigLabel,
-                                    day.bigLabel === String(day.gregorianDayNum) ? null : String(day.gregorianDayNum),
-                                ]
-                                    .filter(Boolean)
-                                    .join(', '), style: ({ pressed }) => [
-                                    { flex: 1 },
-                                    pressed ? { opacity: 0.85 } : null,
-                                ], children: _jsxs(View, { style: [
-                                        { flex: 1 },
-                                        // renderDayBackground paints as an absolutely-filled
-                                        // CHILD (below), not this View's own backgroundColor
-                                        // -- unlike `bg`, which RN clips to this View's own
-                                        // border-radius automatically, an absolute child is
-                                        // NOT clipped to an ancestor's radius unless the
-                                        // ancestor sets overflow:'hidden'. dayRingStyle can
-                                        // in principle carry a borderRadius (it's a plain
-                                        // ViewStyle), so this is here to keep a rounded ring
-                                        // + a full-cell gradient consistent with each other
-                                        // rather than the gradient squaring off past the
-                                        // ring's corners. A no-op for every ring style that
-                                        // has no radius (the only kind in use today).
-                                        { overflow: 'hidden' },
-                                        isSaturday ? { backgroundColor: colors.weekendTint } : null,
-                                        // A day-1 cell already got a drop shadow on its
-                                        // number (see textShadow below); a faint fill on
-                                        // the cell itself too (on request 2026-09-18: "the
-                                        // first of every month should be a little less
-                                        // white... to stand out more") -- after
-                                        // weekendTint (a month start on a Saturday reads
-                                        // as month start first) and before `bg` (the
-                                        // consumer's own per-day content, a holiday say,
-                                        // still wins over either decorative tint).
-                                        day.monthMarker != null && colors.monthMarkerTint
-                                            ? { backgroundColor: colors.monthMarkerTint }
-                                            : null,
-                                        bg ? { backgroundColor: bg } : null,
-                                        divider,
-                                        ring,
-                                    ], children: [background != null ? (_jsx(View, { pointerEvents: "none", style: StyleSheet.absoluteFill, children: background })) : null, _jsxs(View, { style: {
-                                                marginTop: DAY_NUM_TOP,
-                                                height: DAY_NUM_LINE_H,
-                                                alignItems: 'center',
-                                                justifyContent: 'center',
-                                            }, children: [day.isToday ? _jsx(TodayDisc, {}) : null, _jsx(Text, { style: {
-                                                        textAlign: 'center',
-                                                        fontSize: 15,
-                                                        lineHeight: DAY_NUM_LINE_H,
-                                                        // Uniform weight -- today is marked by the disc, not
-                                                        // a heavier number (on request 2026-09-16).
-                                                        fontWeight: '600',
-                                                        fontFamily,
-                                                        color: day.isToday ? TODAY_ON_FILL : muted ? colors.muted : colors.text,
-                                                        fontVariant: ['tabular-nums'],
-                                                        // A day-1 number gets a soft drop shadow -- the
-                                                        // marker (month name/number) already sitting
-                                                        // below it makes this cell the one that starts
-                                                        // a new month, and the lift makes the number
-                                                        // itself read as the one that's "raised" for
-                                                        // it (on request). Every other day stays flat.
-                                                        ...(day.monthMarker != null
-                                                            ? {
-                                                                textShadowColor: 'rgba(0,0,0,0.35)',
-                                                                textShadowOffset: { width: 0, height: 1 },
-                                                                textShadowRadius: 2,
-                                                            }
-                                                            : null),
-                                                    }, children: day.bigLabel })] }), below != null ? (below) : day.subLabel != null || day.monthMarker != null ? (_jsx(Text, { numberOfLines: 1, style: {
-                                                textAlign: 'center',
-                                                marginTop: 1,
-                                                fontSize: 10,
-                                                lineHeight: SUB_LABEL_LINE_H,
-                                                color: colors.muted,
-                                                fontFamily,
-                                                fontVariant: ['tabular-nums'],
-                                            }, children: day.subLabel ?? day.monthMarker })) : null, slots.renderDayCorner ? (_jsx(View, { pointerEvents: "none", style: [
-                                                { position: 'absolute', top: 3 },
-                                                layoutRTL ? { right: 3 } : { left: 3 },
-                                            ], children: slots.renderDayCorner(day) })) : null, slots.renderDayBadge ? (_jsx(View, { pointerEvents: "none", style: [
-                                                { position: 'absolute', top: 2 },
-                                                layoutRTL ? { left: 2 } : { right: 2 },
-                                            ], children: slots.renderDayBadge(day) })) : null] }) }, col));
-                        }) }), slots.renderWeekOverlay ? (_jsx(View, { pointerEvents: "box-none", style: StyleSheet.absoluteFill, children: slots.renderWeekOverlay(page, weekIdx, rowHeight) })) : null] }, weekIdx))) }) }));
+                                        pressed ? { opacity: 0.85 } : null,
+                                    ], children: _jsxs(View, { style: [
+                                            { flex: 1 },
+                                            // renderDayBackground paints as an absolutely-filled
+                                            // CHILD (below), not this View's own backgroundColor
+                                            // -- unlike `bg`, which RN clips to this View's own
+                                            // border-radius automatically, an absolute child is
+                                            // NOT clipped to an ancestor's radius unless the
+                                            // ancestor sets overflow:'hidden'. dayRingStyle can
+                                            // in principle carry a borderRadius (it's a plain
+                                            // ViewStyle), so this is here to keep a rounded ring
+                                            // + a full-cell gradient consistent with each other
+                                            // rather than the gradient squaring off past the
+                                            // ring's corners. A no-op for every ring style that
+                                            // has no radius (the only kind in use today).
+                                            { overflow: 'hidden' },
+                                            isSaturday ? { backgroundColor: colors.weekendTint } : null,
+                                            // A day-1 cell already got a drop shadow on its
+                                            // number (see textShadow below); a faint fill on
+                                            // the cell itself too (on request 2026-09-18: "the
+                                            // first of every month should be a little less
+                                            // white... to stand out more") -- after
+                                            // weekendTint (a month start on a Saturday reads
+                                            // as month start first) and before `bg` (the
+                                            // consumer's own per-day content, a holiday say,
+                                            // still wins over either decorative tint).
+                                            day.monthMarker != null && colors.monthMarkerTint
+                                                ? { backgroundColor: colors.monthMarkerTint }
+                                                : null,
+                                            bg ? { backgroundColor: bg } : null,
+                                            divider,
+                                            ring,
+                                        ], children: [background != null ? (_jsx(View, { pointerEvents: "none", style: StyleSheet.absoluteFill, children: background })) : null, _jsxs(View, { style: {
+                                                    marginTop: DAY_NUM_TOP,
+                                                    height: DAY_NUM_LINE_H,
+                                                    alignItems: 'center',
+                                                    justifyContent: 'center',
+                                                }, children: [day.isToday ? _jsx(TodayDisc, {}) : null, _jsx(Text, { style: {
+                                                            textAlign: 'center',
+                                                            fontSize: 15,
+                                                            lineHeight: DAY_NUM_LINE_H,
+                                                            // Uniform weight -- today is marked by the disc, not
+                                                            // a heavier number (on request 2026-09-16).
+                                                            fontWeight: '600',
+                                                            fontFamily,
+                                                            color: day.isToday ? TODAY_ON_FILL : muted ? colors.muted : colors.text,
+                                                            fontVariant: ['tabular-nums'],
+                                                            // A day-1 number gets a soft drop shadow -- the
+                                                            // marker (month name/number) already sitting
+                                                            // below it makes this cell the one that starts
+                                                            // a new month, and the lift makes the number
+                                                            // itself read as the one that's "raised" for
+                                                            // it (on request). Every other day stays flat.
+                                                            ...(day.monthMarker != null
+                                                                ? {
+                                                                    textShadowColor: 'rgba(0,0,0,0.35)',
+                                                                    textShadowOffset: { width: 0, height: 1 },
+                                                                    textShadowRadius: 2,
+                                                                }
+                                                                : null),
+                                                        }, children: day.bigLabel })] }), below != null ? (below) : day.subLabel != null || day.monthMarker != null ? (_jsx(Text, { numberOfLines: 1, style: {
+                                                    textAlign: 'center',
+                                                    marginTop: 1,
+                                                    fontSize: 10,
+                                                    lineHeight: SUB_LABEL_LINE_H,
+                                                    color: colors.muted,
+                                                    fontFamily,
+                                                    fontVariant: ['tabular-nums'],
+                                                }, children: day.subLabel ?? day.monthMarker })) : null, slots.renderDayCorner ? (_jsx(View, { pointerEvents: "none", style: [
+                                                    { position: 'absolute', top: 3 },
+                                                    layoutRTL ? { right: 3 } : { left: 3 },
+                                                ], children: slots.renderDayCorner(day) })) : null, slots.renderDayBadge ? (_jsx(View, { pointerEvents: "none", style: [
+                                                    { position: 'absolute', top: 2 },
+                                                    layoutRTL ? { left: 2 } : { right: 2 },
+                                                ], children: slots.renderDayBadge(day) })) : null] }) }, col));
+                            }) })) : null, trailingCount > 0 ? (_jsx(View, { style: { flex: trailingCount, flexDirection: 'row' }, children: Array.from({ length: trailingCount }, (_, i) => (_jsx(View, { style: { flex: 1 } }, cardColCount + i))) })) : null, slots.renderWeekOverlay ? (_jsx(View, { pointerEvents: "box-none", style: StyleSheet.absoluteFill, children: slots.renderWeekOverlay(page, weekIdx, rowHeight) })) : null] }, weekIdx));
+            }) }) }));
 }
 /** The "today" disc, breathing -- a slow scale+opacity pulse behind the number. */
 function TodayDisc() {
