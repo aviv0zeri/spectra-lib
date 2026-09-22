@@ -851,11 +851,21 @@ export function CalendarGrid({
     () => ({
       scrollToToday: (animated = true) => {
         const home = layoutTable[monthsBack];
-        if (home) {
-          requestAnimationFrame(() =>
-            listRef.current?.scrollToOffset({ offset: home.offset, animated }),
-          );
-        }
+        const page = months[monthsBack];
+        if (!home) return;
+        // Land today's own week as the SECOND visible row, not flush at
+        // the very top -- one row of context above it, same rule the
+        // year-overview picker already follows landing on an anchor
+        // month (on request). No row above WITHIN this month (today's
+        // week is the month's first) falls back to the plain month-top
+        // offset -- reaching into the previous month's own last row for
+        // a "row above" isn't worth the complexity for a landing that
+        // already reads fine flush at a month boundary.
+        const weekIdx = page
+          ? Math.floor((page.firstColOffset + (anchorOrdRef.current - page.firstOfMonthOrd)) / 7)
+          : 0;
+        const offset = home.offset + Math.max(0, weekIdx - 1) * (rowHeight + WEEK_GAP);
+        requestAnimationFrame(() => listRef.current?.scrollToOffset({ offset, animated }));
       },
       scrollToGregorianMonth: (year: number, month0: number) => {
         scrollToFlat(system.flatIndexForGregorian(anchorKey, year, month0), false);
@@ -872,7 +882,17 @@ export function CalendarGrid({
         if (i >= 0) scrollToFlat(i - monthsBack, false);
       },
     }),
-    [layoutTable, monthsBack, scrollToFlat, system, anchorKey, months, maxMonthsAhead, weekStartsOn],
+    [
+      layoutTable,
+      monthsBack,
+      scrollToFlat,
+      system,
+      anchorKey,
+      months,
+      maxMonthsAhead,
+      weekStartsOn,
+      rowHeight,
+    ],
   );
 
   const getItemLayout = useCallback(
