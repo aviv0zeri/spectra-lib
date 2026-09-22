@@ -488,6 +488,14 @@ function MonthBlock({
                       >
                         {day.isToday ? <TodayDisc /> : null}
                         <Text
+                          // The grid is a fixed geometry (row heights are
+                          // computed in JS px, not intrinsic) -- OS-level
+                          // Dynamic Type growth on a short numeral label
+                          // like this breaks the layout rather than
+                          // reflowing it, so this text opts out (on
+                          // request 2026-09-22: "huge problem when
+                          // changing the iphone text size").
+                          allowFontScaling={false}
                           style={{
                             textAlign: 'center',
                             fontSize: 15,
@@ -521,6 +529,7 @@ function MonthBlock({
                       ) : day.subLabel != null || day.monthMarker != null ? (
                         <Text
                           numberOfLines={1}
+                          allowFontScaling={false}
                           style={{
                             textAlign: 'center',
                             marginTop: 1,
@@ -1043,10 +1052,14 @@ export function CalendarGrid({
           {weekdayOrder.map((wd) => (
             <View key={wd} style={{ flex: 1, alignItems: 'center' }}>
               <Text
+                // Fixed-width columns aligned to the day grid below -- see
+                // the day-number Text's own note on why this opts out of
+                // Dynamic Type.
+                allowFontScaling={false}
                 style={{
                   color: colors.text,
-                  fontSize: 13,
-                  fontWeight: '700',
+                  fontSize: 16,
+                  fontWeight: '800',
                   fontFamily,
                   textAlign: 'center',
                 }}

@@ -196,7 +196,23 @@ function MonthBlock({ page, system, rowHeight, weekStartsOn, layoutRTL, todayOrd
                                                     height: DAY_NUM_LINE_H,
                                                     alignItems: 'center',
                                                     justifyContent: 'center',
-                                                }, children: [day.isToday ? _jsx(TodayDisc, {}) : null, _jsx(Text, { style: {
+                                                }, children: [day.isToday ? _jsx(TodayDisc, {}) : null, _jsx(Text
+                                                    // The grid is a fixed geometry (row heights are
+                                                    // computed in JS px, not intrinsic) -- OS-level
+                                                    // Dynamic Type growth on a short numeral label
+                                                    // like this breaks the layout rather than
+                                                    // reflowing it, so this text opts out (on
+                                                    // request 2026-09-22: "huge problem when
+                                                    // changing the iphone text size").
+                                                    , { 
+                                                        // The grid is a fixed geometry (row heights are
+                                                        // computed in JS px, not intrinsic) -- OS-level
+                                                        // Dynamic Type growth on a short numeral label
+                                                        // like this breaks the layout rather than
+                                                        // reflowing it, so this text opts out (on
+                                                        // request 2026-09-22: "huge problem when
+                                                        // changing the iphone text size").
+                                                        allowFontScaling: false, style: {
                                                             textAlign: 'center',
                                                             fontSize: 15,
                                                             lineHeight: DAY_NUM_LINE_H,
@@ -219,7 +235,7 @@ function MonthBlock({ page, system, rowHeight, weekStartsOn, layoutRTL, todayOrd
                                                                     textShadowRadius: 2,
                                                                 }
                                                                 : null),
-                                                        }, children: day.bigLabel })] }), below != null ? (below) : day.subLabel != null || day.monthMarker != null ? (_jsx(Text, { numberOfLines: 1, style: {
+                                                        }, children: day.bigLabel })] }), below != null ? (below) : day.subLabel != null || day.monthMarker != null ? (_jsx(Text, { numberOfLines: 1, allowFontScaling: false, style: {
                                                     textAlign: 'center',
                                                     marginTop: 1,
                                                     fontSize: 10,
@@ -556,10 +572,18 @@ export function CalendarGrid({ calendarType, layoutRTL, weekStartsOn, monthLabel
                     paddingRight: 8 + (layoutRTL ? 0 : endInset),
                     marginTop: 10,
                     marginBottom: 4,
-                }, children: _jsx(View, { style: { flexDirection: 'row', direction: layoutRTL ? 'rtl' : 'ltr' }, children: weekdayOrder.map((wd) => (_jsx(View, { style: { flex: 1, alignItems: 'center' }, children: _jsx(Text, { style: {
+                }, children: _jsx(View, { style: { flexDirection: 'row', direction: layoutRTL ? 'rtl' : 'ltr' }, children: weekdayOrder.map((wd) => (_jsx(View, { style: { flex: 1, alignItems: 'center' }, children: _jsx(Text
+                        // Fixed-width columns aligned to the day grid below -- see
+                        // the day-number Text's own note on why this opts out of
+                        // Dynamic Type.
+                        , { 
+                            // Fixed-width columns aligned to the day grid below -- see
+                            // the day-number Text's own note on why this opts out of
+                            // Dynamic Type.
+                            allowFontScaling: false, style: {
                                 color: colors.text,
-                                fontSize: 13,
-                                fontWeight: '700',
+                                fontSize: 16,
+                                fontWeight: '800',
                                 fontFamily,
                                 textAlign: 'center',
                             }, children: weekdayLabels[wd] }) }, wd))) }) }), _jsxs(View, { style: { flex: 1 }, children: [_jsx(Animated.FlatList, { ref: listRef, style: { flex: 1 }, data: months, keyExtractor: (m) => m.key, renderItem: renderItem, getItemLayout: getItemLayout, initialScrollIndex: initialIndex, snapToOffsets: snapOffsets, disableIntervalMomentum: snapToMonths, decelerationRate: snapToMonths ? 'fast' : 'normal', onLayout: (e) => {
