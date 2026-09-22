@@ -300,14 +300,17 @@ function MonthBlock({
   };
 }) {
   const weekday = (col: number) => (weekStartsOn + col) % 7;
-  // A second filler tap within 300ms of the first -- anywhere in the
+  // A second filler tap within 450ms of the first -- anywhere in the
   // filler, not necessarily the same cell, since it's all one undifferentiated
-  // "free" area -- jumps to today. Matches the real-day double-tap timing
-  // (DOUBLE_TAP_MS) consumers use for their own muted-day handling.
+  // "free" area -- jumps to today. Wider than the real-day double-tap's own
+  // 300ms (DOUBLE_TAP_MS): a large, undifferentiated tap target reads as a
+  // more casual double-tap than a small numbered cell, and testing found
+  // 300ms rejected a real double-tap here often enough to feel unreliable
+  // (on request 2026-09-22: "it works but not all the time").
   const lastFillerTapRef = useRef(0);
   const onFillerPress = () => {
     const now = Date.now();
-    if (now - lastFillerTapRef.current < 300) {
+    if (now - lastFillerTapRef.current < 450) {
       lastFillerTapRef.current = 0;
       goToToday(true);
     } else {
