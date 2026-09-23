@@ -126,7 +126,13 @@ export function NotificationBanner({
   const panResponder = useMemo(
     () =>
       PanResponder.create({
-        onStartShouldSetPanResponder: () => true,
+        // false, not true: claiming the responder on touch-DOWN would steal
+        // every tap before the inner Pressable's own responder ever sees it,
+        // breaking onPress and the action buttons entirely. Only
+        // onMoveShouldSetPanResponder claims it, and only past the move
+        // threshold below -- a plain tap never triggers it, so it passes
+        // through to Pressable untouched.
+        onStartShouldSetPanResponder: () => false,
         onMoveShouldSetPanResponder: (_evt, gesture) =>
           direction === 'up'
             ? Math.abs(gesture.dy) > MOVE_THRESHOLD
