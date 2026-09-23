@@ -105,11 +105,18 @@ src/native/push/
                       `spectra-lib/native/push` AT ALL, for every consumer,
                       even one that only wants permissions/registration/
                       channels/foreground and never touches background push
-                      (GateOpen, today). Confirmed the hard way: without
-                      this split, GateOpen crashed at boot the moment it
-                      imported anything from this barrel, on a real device/
-                      simulator build where expo-task-manager's iOS module
-                      doesn't resolve under New Architecture.
+                      (GateOpen, today). What actually happened: with this
+                      file in the barrel, GateOpen crashed at boot ("Cannot
+                      find native module 'ExpoTaskManager'") on any binary
+                      that didn't have expo-task-manager's native module
+                      compiled in -- an older install running a build that
+                      predates the dependency, which is exactly what a
+                      JS-only OTA update reaches. Importing the barrel
+                      evaluated this file, which requires that native
+                      module at import time. (An earlier version of this
+                      note blamed New Architecture module resolution; that
+                      was never established -- it came from misreading a
+                      stale install as the freshly built one.)
   local.ts            scheduled LOCAL notifications (no server round-trip at
                       all) -- Apple/Google both have a first-class API for
                       this, distinct from remote push; e.g. GateOpen's own
