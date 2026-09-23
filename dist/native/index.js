@@ -154,3 +154,9 @@ export { gregorianToHebrew, hebrewToGregorian, hebrewLeapYear, lastDayOfHebrewMo
 // (GateOpen's israelHolidays engine) shares these rather than re-deriving.
 fixedFromHebrew, hebrewFromFixed, } from './calendar/hebrewDate';
 export { floorDiv, mod, gregorianLeapYear, fixedFromGregorian, gregorianFromFixed, gregorianYearFromFixed, } from './calendar/fixedDay';
+// ---------------------------------------------------------------------------
+// Notifications -- the visual counterpart to ./push's OS-plumbing layer: a
+// transient banner and a persistent list/history row, consuming push's own
+// NotificationEvent as-is. See ./notifications/README.md.
+// ---------------------------------------------------------------------------
+export { NotificationBanner, NotificationRow } from './notifications';
