@@ -94,7 +94,22 @@ src/native/push/
                       badge? (`setNotificationHandler` on iOS/Android both)
   background.ts       silent/data-only push handling (`content-available: 1`
                       / FCM data message) -- background fetch/sync triggers,
-                      no user-visible alert
+                      no user-visible alert. NOT re-exported from index.ts --
+                      its own `setBackgroundHandler` is imported from
+                      `spectra-lib/native/push/background`, its own subpath.
+                      expo-task-manager requires defineTask() to run at the
+                      module scope of an early-loaded file, so this file
+                      calls it unconditionally on import -- folding it into
+                      the main barrel would make expo-task-manager
+                      resolvable a hard requirement of importing
+                      `spectra-lib/native/push` AT ALL, for every consumer,
+                      even one that only wants permissions/registration/
+                      channels/foreground and never touches background push
+                      (GateOpen, today). Confirmed the hard way: without
+                      this split, GateOpen crashed at boot the moment it
+                      imported anything from this barrel, on a real device/
+                      simulator build where expo-task-manager's iOS module
+                      doesn't resolve under New Architecture.
   local.ts            scheduled LOCAL notifications (no server round-trip at
                       all) -- Apple/Google both have a first-class API for
                       this, distinct from remote push; e.g. GateOpen's own

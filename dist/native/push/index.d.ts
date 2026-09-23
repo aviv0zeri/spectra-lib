@@ -14,7 +14,6 @@ export { registerDevice, unregisterDevice, onTokenRefresh } from './registration
 export { ensureChannels, deleteChannel } from './channels';
 export { setForegroundHandler } from './foreground';
 export type { ForegroundPresentation } from './foreground';
-export { setBackgroundHandler } from './background';
 export { schedule, cancel, cancelAll } from './local';
 export type { LocalNotificationRequest } from './local';
 export { setDeepLinkResolver, getLaunchTarget, onNotificationTapped } from './deepLink';

@@ -13,6 +13,15 @@ export { getPermissionStatus, requestPermission } from './permissions';
 export { registerDevice, unregisterDevice, onTokenRefresh } from './registration';
 export { ensureChannels, deleteChannel } from './channels';
 export { setForegroundHandler } from './foreground';
-export { setBackgroundHandler } from './background';
+// setBackgroundHandler is NOT re-exported here -- import it from
+// './background' directly (spectra-lib/native/push/background). Its own
+// doc comment explains why: expo-task-manager requires defineTask() to run
+// at the module scope of an early-loaded file, so background.ts calls it
+// unconditionally on import, which makes expo-task-manager resolvable a
+// hard requirement of merely importing this file -- not just of calling
+// setBackgroundHandler. A consumer that only wants permissions/registration/
+// channels/foreground (GateOpen, today) shouldn't need expo-task-manager
+// installed at all just to import this barrel; one that also wants
+// background/silent-push handling imports the background subpath too.
 export { schedule, cancel, cancelAll } from './local';
 export { setDeepLinkResolver, getLaunchTarget, onNotificationTapped } from './deepLink';
