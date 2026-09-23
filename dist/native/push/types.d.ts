@@ -72,3 +72,22 @@ export interface DeepLinkTarget {
     screen: string;
     params?: Record<string, unknown>;
 }
+/** How a notification that arrives while the app is OPEN should be presented
+ * by the OS. Both platforms default to showing nothing in that case, so a
+ * project opts in through ForegroundPresenter's policy. */
+export interface ForegroundPresentation {
+    /** Whether to show a visible banner/alert while the app is foregrounded.
+     * iOS: maps to shouldShowBanner/shouldShowList; Android: whether the
+     * notification is posted to the tray at all while the activity is
+     * resumed. */
+    showBanner: boolean;
+    playSound: boolean;
+    updateBadge: boolean;
+}
+/** Thrown when a notification is scheduled for a category nobody registered
+ * with the ChannelRegistry -- the category carries the channel and sound, so
+ * guessing would silently post to the wrong (or a missing) channel. */
+export declare class UnknownCategoryError extends Error {
+    readonly categoryId: string;
+    constructor(categoryId: string);
+}

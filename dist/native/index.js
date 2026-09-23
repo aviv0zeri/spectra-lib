@@ -159,4 +159,4 @@ export { floorDiv, mod, gregorianLeapYear, fixedFromGregorian, gregorianFromFixe
 // transient banner and a persistent list/history row, consuming push's own
 // NotificationEvent as-is. See ./notifications/README.md.
 // ---------------------------------------------------------------------------
-export { NotificationBanner, NotificationRow } from './notifications';
+export { NotificationBanner, NotificationRow, PushTester, PushTesterController, PUSH_TESTER_DELAYS, usePushTester, } from './notifications';

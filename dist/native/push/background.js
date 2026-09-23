@@ -29,7 +29,7 @@ function isNotificationResponse(payload) {
  * Notification object -- it's the raw remote payload, and `notification` is
  * explicitly null for headless/data-only pushes (the design intent this
  * file exists for). A payload with non-null `notification` had visible
- * alert content and is foreground.ts/the OS tray's concern, not this one's.
+ * alert content and is ForegroundPresenter/the OS tray's concern, not this one's.
  */
 function toBackgroundEvent(payload) {
     if (isNotificationResponse(payload))

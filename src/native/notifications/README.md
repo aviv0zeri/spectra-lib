@@ -67,3 +67,33 @@ No icon library (`icon` is a caller-supplied `ReactNode`, same slot
 theme is the only source. This package doesn't format dates/times either;
 `NotificationRow.timestamp` is a plain display string the caller already
 formatted for their own locale.
+
+## `PushTester` -- exercising the whole path
+
+A screen body for testing a project's push setup end to end: permission state,
+a title/body form, a real LOCAL notification fired 2 or 10 seconds out (it takes
+exactly the path a remote push takes once on the device, and it's the only way
+to exercise that on an iOS Simulator), a list of what was sent with a "reuse"
+action, and this device's push token.
+
+```tsx
+<PushTester
+  client={push}                 // a PushNotificationClient (or any PushTesterClient)
+  categoryId="default"          // a category registered with the client
+  defaultTitle="Test" defaultBody="Hello"
+  labels={labels}               // every word -- see PushTesterLabels
+  colors={notificationColors}   // same NotificationColors as the banner/row
+  icons={{ permissionGranted, permissionMissing, notification }}
+  rtl={layoutRTL}
+/>
+```
+
+Same boundary as the rest: no default colors, strings or icons, and no screen
+chrome (title bar, back button) -- the caller wraps it. `scheduled` and `tapped`
+labels carry `{n}` / `{title}` placeholders the tester fills in.
+
+The logic is `PushTesterController`, a plain class (state + actions, no React, no
+strings -- statuses are data the view words with the caller's labels) that is
+unit-tested against a fake client; `PushTester` and `usePushTester` are a thin
+view over it. It asks only for a structural `PushTesterClient` (permission,
+token, local scheduling), so this folder pulls in no push runtime.

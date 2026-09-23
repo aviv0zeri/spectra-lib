@@ -4,10 +4,10 @@
  * a title nor a body -- APNs `content-available` and FCM data messages both
  * arrive this way when they carry no `alert`/`notification` block.
  */
-function isSilent(content) {
-    if (content.data?.silent === true)
+function isSilent(raw) {
+    if (raw.data?.silent === true)
         return true;
-    return !content.title && !content.body;
+    return !raw.title && !raw.body;
 }
 /**
  * There's no cross-platform field for "which NotificationCategory is this,"
@@ -15,19 +15,18 @@ function isSilent(content) {
  * is that the sender includes `categoryId` in the payload's data -- the iOS
  * `categoryIdentifier` is a fallback for a push that only set that.
  */
-function extractCategoryId(content) {
-    const fromData = content.data?.categoryId;
+function extractCategoryId(raw) {
+    const fromData = raw.data?.categoryId;
     if (typeof fromData === 'string')
         return fromData;
-    return content.categoryIdentifier ?? '';
+    return raw.categoryIdentifier ?? '';
 }
-export function toNotificationEvent(notification) {
-    const { content } = notification.request;
+export function toNotificationEvent(raw) {
     return {
-        categoryId: extractCategoryId(content),
-        title: content.title ?? '',
-        body: content.body ?? '',
-        data: content.data ?? {},
-        silent: isSilent(content),
+        categoryId: extractCategoryId(raw),
+        title: raw.title ?? '',
+        body: raw.body ?? '',
+        data: raw.data ?? {},
+        silent: isSilent(raw),
     };
 }

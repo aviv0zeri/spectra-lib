@@ -1,11 +1,12 @@
 /**
- * Shared normalization from expo-notifications' own shapes into this tree's
- * provider-agnostic NotificationEvent (see types.ts) -- used by foreground.ts,
- * background.ts and deepLink.ts so all three agree on what "silent" and
- * "categoryId" mean for the same incoming notification.
+ * Shared normalization from the platform's RawNotification into this tree's
+ * provider-agnostic NotificationEvent (see types.ts) -- used by
+ * ForegroundPresenter, DeepLinkRouter and background.ts so all three agree on
+ * what "silent" and "categoryId" mean for the same incoming notification.
+ *
+ * Pure: no expo import, so it is unit-tested directly.
  */
-import type * as Notifications from 'expo-notifications';
-
+import type { RawNotification } from '../platform';
 import type { NotificationEvent } from '../types';
 
 /**
@@ -14,9 +15,9 @@ import type { NotificationEvent } from '../types';
  * a title nor a body -- APNs `content-available` and FCM data messages both
  * arrive this way when they carry no `alert`/`notification` block.
  */
-function isSilent(content: Notifications.NotificationContent): boolean {
-  if (content.data?.silent === true) return true;
-  return !content.title && !content.body;
+function isSilent(raw: RawNotification): boolean {
+  if (raw.data?.silent === true) return true;
+  return !raw.title && !raw.body;
 }
 
 /**
@@ -25,19 +26,18 @@ function isSilent(content: Notifications.NotificationContent): boolean {
  * is that the sender includes `categoryId` in the payload's data -- the iOS
  * `categoryIdentifier` is a fallback for a push that only set that.
  */
-function extractCategoryId(content: Notifications.NotificationContent): string {
-  const fromData = content.data?.categoryId;
+function extractCategoryId(raw: RawNotification): string {
+  const fromData = raw.data?.categoryId;
   if (typeof fromData === 'string') return fromData;
-  return content.categoryIdentifier ?? '';
+  return raw.categoryIdentifier ?? '';
 }
 
-export function toNotificationEvent(notification: Notifications.Notification): NotificationEvent {
-  const { content } = notification.request;
+export function toNotificationEvent(raw: RawNotification): NotificationEvent {
   return {
-    categoryId: extractCategoryId(content),
-    title: content.title ?? '',
-    body: content.body ?? '',
-    data: content.data ?? {},
-    silent: isSilent(content),
+    categoryId: extractCategoryId(raw),
+    title: raw.title ?? '',
+    body: raw.body ?? '',
+    data: raw.data ?? {},
+    silent: isSilent(raw),
   };
 }
