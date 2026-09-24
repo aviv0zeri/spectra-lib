@@ -37,6 +37,18 @@ const TODAY_PILL_BORDER = 'rgba(0, 0, 0, 0.08)';
 const DAY_NUM_TOP = 4;
 const DAY_NUM_LINE_H = 18;
 const SUB_LABEL_LINE_H = 13;
+// A raised day (isDayRaised) reads as a keycap: a darker lip along the cell's
+// bottom edge, drawn INSIDE the cell. Deliberately no gap and no drop shadow --
+// the cells touch, so a drop shadow would be covered by the neighbours and would
+// need spacing around every day to show (tried and rejected on 2026-09-24: "why
+// the spacings? I never asked for that"). It is a thin overlay strip, NOT a
+// border: a border would shrink the day's gradient by the lip's height, meet the
+// left hairline divider in a jagged join on Android, and layer differently on
+// iOS and Android. RAISED_LIP_COLOR is the default for a light surface;
+// CalendarColors.raisedLip overrides it (a dark theme needs a lighter one --
+// translucent black is invisible on a near-black panel).
+const RAISED_LIP = 3;
+const RAISED_LIP_COLOR = 'rgba(0, 0, 0, 0.13)';
 // Breathing room above each month's first week, the gap between week cards,
 // and the gap after a month block. Part of every offset, so getItemLayout and
 // the rendered heights can never silently drift.
@@ -101,14 +113,15 @@ function MonthBlock({ page, system, rowHeight, weekStartsOn, layoutRTL, todayOrd
                 // side below is computed per layoutRTL like the dividers above
                 // already are. A row never has both leading and trailing filler
                 // at once, so realInnerSide is at most one side.
-                const realInnerSide = leadingCount > 0
-                    ? (layoutRTL ? 'right' : 'left')
-                    : trailingCount > 0
-                        ? (layoutRTL ? 'left' : 'right')
-                        : null;
-                // Trailing filler itself stays a plain, borderless View -- no
-                // symmetric "inner side" needed there, only on realCard's own
-                // side facing it (realInnerSide above already covers that).
+                // Only a LEADING filler squares the real card's side: it is its
+                // own grey card sitting flush against the real days, and the two
+                // blend into one shape. A TRAILING filler is plain page (no card,
+                // no fill), so squaring the real card's side there left the last
+                // day of the month with a sharp corner against empty space (on
+                // request 2026-09-24: "the edges here are sharp, I want them
+                // round... for all cases like that") -- that side keeps its round
+                // corners and its faded border like every other card edge.
+                const realInnerSide = leadingCount > 0 ? (layoutRTL ? 'right' : 'left') : null;
                 const leadingInnerSide = layoutRTL ? 'left' : 'right';
                 const cardRadii = (side) => ({
                     borderTopLeftRadius: side === 'left' ? 0 : 14,
@@ -193,6 +206,7 @@ function MonthBlock({ page, system, rowHeight, weekStartsOn, layoutRTL, todayOrd
                                 // one line, not two, so when it returns something the
                                 // formation's own sub-label / month marker steps aside.
                                 const below = slots.renderDayBelow?.(day);
+                                const raised = slots.isDayRaised?.(day) ?? false;
                                 return (_jsx(Pressable, { disabled: disabled, onPress: slots.onDayPress ? () => slots.onDayPress?.(day) : undefined, accessibilityLabel: [
                                         day.bigLabel,
                                         day.bigLabel === String(day.gregorianDayNum) ? null : String(day.gregorianDayNum),
@@ -290,7 +304,14 @@ function MonthBlock({ page, system, rowHeight, weekStartsOn, layoutRTL, todayOrd
                                                 ], children: slots.renderDayCorner(day) })) : null, slots.renderDayBadge ? (_jsx(View, { pointerEvents: "none", style: [
                                                     { position: 'absolute', top: 2 },
                                                     layoutRTL ? { left: 2 } : { right: 2 },
-                                                ], children: slots.renderDayBadge(day) })) : null] }) }, col));
+                                                ], children: slots.renderDayBadge(day) })) : null, raised ? (_jsx(View, { pointerEvents: "none", style: {
+                                                    position: 'absolute',
+                                                    left: 0,
+                                                    right: 0,
+                                                    bottom: 0,
+                                                    height: RAISED_LIP,
+                                                    backgroundColor: colors.raisedLip ?? RAISED_LIP_COLOR,
+                                                } })) : null] }) }, col));
                             }) })) : null, trailingCount > 0 ? (_jsx(Pressable, { onPress: onFillerPress, style: { flex: trailingCount, flexDirection: 'row' }, children: Array.from({ length: trailingCount }, (_, i) => (_jsx(View, { style: { flex: 1 } }, i))) })) : null, slots.renderWeekOverlay ? (_jsx(View, { pointerEvents: "box-none", style: StyleSheet.absoluteFill, children: slots.renderWeekOverlay(page, weekIdx, rowHeight) })) : null] }, weekIdx));
             }) }) }));
 }
@@ -329,7 +350,7 @@ function TodayDisc() {
             opacity,
         } }));
 }
-export function CalendarGrid({ calendarType, layoutRTL, weekStartsOn, monthLabelStyle = 'name', t, colors, fontFamily, rowHeight, monthsBack = 12, initialMonths = 12, extendMonths = 12, maxMonthsAhead = 24, initialScrollTo = 'today', weekdayLabels, todayLabel, extraData, dayBackgroundColor, renderDayBackground, dayRingStyle, isDayDisabled, isDayMuted, renderDayBelow, renderDayCorner, renderDayBadge, renderWeekOverlay, onDayPress, onVisibleMonthChange, onTopOrdinalChange, snapToMonths = false, scrollY, onMonthLayout, endInset = 0, listOverlay, renderTitleAccessory, onTitlePress, footer, gridRef, testID, }) {
+export function CalendarGrid({ calendarType, layoutRTL, weekStartsOn, monthLabelStyle = 'name', t, colors, fontFamily, rowHeight, monthsBack = 12, initialMonths = 12, extendMonths = 12, maxMonthsAhead = 24, initialScrollTo = 'today', weekdayLabels, todayLabel, extraData, dayBackgroundColor, renderDayBackground, dayRingStyle, isDayDisabled, isDayMuted, isDayRaised, renderDayBelow, renderDayCorner, renderDayBadge, renderWeekOverlay, onDayPress, onVisibleMonthChange, onTopOrdinalChange, snapToMonths = false, scrollY, onMonthLayout, endInset = 0, listOverlay, renderTitleAccessory, onTitlePress, footer, gridRef, testID, }) {
     const system = useMemo(() => createCalendarSystem({ type: calendarType, layoutRTL, monthLabelStyle, t }), [calendarType, layoutRTL, monthLabelStyle, t]);
     const [anchorOrd, setAnchorOrd] = useState(() => localDayOrdinal(new Date()));
     const anchorOrdRef = useRef(anchorOrd);
@@ -583,6 +604,7 @@ export function CalendarGrid({ calendarType, layoutRTL, weekStartsOn, monthLabel
         dayRingStyle,
         isDayDisabled,
         isDayMuted,
+        isDayRaised,
         renderDayBelow,
         renderDayCorner,
         renderDayBadge,

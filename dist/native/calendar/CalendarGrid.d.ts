@@ -18,10 +18,9 @@ export interface CalendarColors {
     weekendTint: string;
     /**
      * The screen behind the calendar (a consumer's own void/page colour).
-     * Painted on a trailing filler cell (the blank days after the month
-     * ends) so it reads as the page showing through, not a stray patch of
-     * the week card's own `panel` colour -- optional, defaults to
-     * 'transparent' (the week card's panel shows through, the old look).
+     * Currently unused: the trailing filler (the blank days after a month
+     * ends) sits OUTSIDE the week card, so the page already shows through on
+     * its own. Kept so existing callers still type-check.
      */
     background?: string;
     /**
@@ -30,6 +29,13 @@ export interface CalendarColors {
      * own drop shadow is the only month-start cue, the old look).
      */
     monthMarkerTint?: string;
+    /**
+     * The colour of the raised-day lip (see `isDayRaised`) -- optional, defaults
+     * to translucent black, which suits a light surface. A dark theme should pass
+     * a light translucent colour instead (translucent black vanishes on a dark
+     * panel).
+     */
+    raisedLip?: string;
 }
 export interface CalendarDay {
     /** The whole-day ordinal (DST-safe) -- the stable key for booking math. */
@@ -123,6 +129,15 @@ export interface CalendarGridProps {
     dayRingStyle?: DayRingFn;
     isDayDisabled?: DayBoolFn;
     isDayMuted?: DayBoolFn;
+    /**
+     * Draw the day RAISED, like a keycap -- a darker lip along the bottom edge
+     * of the cell -- instead of flat. For making the days that still matter
+     * pop while the rest recede; e.g. `day => !day.isPast` lifts today and
+     * every future day and leaves past days flat. The cell keeps its exact
+     * size and position (no gap, no layout change); the look is this
+     * package's own, the caller only picks which days.
+     */
+    isDayRaised?: DayBoolFn;
     renderDayBelow?: DayNodeFn;
     /** Reading-START corner mark (top-left LTR / top-right RTL) -- a faith glyph, say. */
     renderDayCorner?: DayNodeFn;
@@ -185,5 +200,5 @@ export interface CalendarGridProps {
     gridRef?: ForwardedRef<CalendarGridHandle>;
     testID?: string;
 }
-export declare function CalendarGrid({ calendarType, layoutRTL, weekStartsOn, monthLabelStyle, t, colors, fontFamily, rowHeight, monthsBack, initialMonths, extendMonths, maxMonthsAhead, initialScrollTo, weekdayLabels, todayLabel, extraData, dayBackgroundColor, renderDayBackground, dayRingStyle, isDayDisabled, isDayMuted, renderDayBelow, renderDayCorner, renderDayBadge, renderWeekOverlay, onDayPress, onVisibleMonthChange, onTopOrdinalChange, snapToMonths, scrollY, onMonthLayout, endInset, listOverlay, renderTitleAccessory, onTitlePress, footer, gridRef, testID, }: CalendarGridProps): import("react").JSX.Element;
+export declare function CalendarGrid({ calendarType, layoutRTL, weekStartsOn, monthLabelStyle, t, colors, fontFamily, rowHeight, monthsBack, initialMonths, extendMonths, maxMonthsAhead, initialScrollTo, weekdayLabels, todayLabel, extraData, dayBackgroundColor, renderDayBackground, dayRingStyle, isDayDisabled, isDayMuted, isDayRaised, renderDayBelow, renderDayCorner, renderDayBadge, renderWeekOverlay, onDayPress, onVisibleMonthChange, onTopOrdinalChange, snapToMonths, scrollY, onMonthLayout, endInset, listOverlay, renderTitleAccessory, onTitlePress, footer, gridRef, testID, }: CalendarGridProps): import("react").JSX.Element;
 export {};
