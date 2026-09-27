@@ -31,7 +31,7 @@ import { jsx as _jsx, jsxs as _jsxs } from "react/jsx-runtime";
  * colors anywhere in `SheetColors`.
  */
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Animated, Dimensions, Modal, Pressable, StyleSheet, Text, View, } from 'react-native';
+import { Animated, Dimensions, Modal, PanResponder, Pressable, StyleSheet, Text, View, } from 'react-native';
 /**
  * The header row alone, exported separately so a caller building a fully
  * custom sheet body still gets the same title-centering grid (three equal
@@ -52,7 +52,7 @@ export function SheetHeader({ left, title, right, colors, rtl = false, titleStyl
  * flip `visible`, the same lifecycle every other component in this package
  * uses.
  */
-export function BottomSheet({ visible, onRequestClose, colors, rtl = false, children, header, title, headerLeft, headerRight, showGrabber = true, maxHeightRatio = 0.92, animationDuration = 240, Container, style, contentContainerStyle, modalProps, onExited, testID, }) {
+export function BottomSheet({ visible, onRequestClose, colors, rtl = false, children, header, title, headerLeft, headerRight, showGrabber = true, dragToDismiss = true, dismissDragDistance = 80, maxHeightRatio = 0.92, animationDuration = 240, Container, style, contentContainerStyle, modalProps, onExited, testID, }) {
     const screenHeight = useMemo(() => Dimensions.get('window').height, []);
     const translateY = useRef(new Animated.Value(screenHeight)).current;
     const scrimOpacity = useRef(new Animated.Value(0)).current;
@@ -60,6 +60,39 @@ export function BottomSheet({ visible, onRequestClose, colors, rtl = false, chil
     // the sheet would vanish instantly (no slide-down) the moment a caller
     // flips `visible` to false.
     const mounted = useAnimatedMount(visible, animationDuration, onExited);
+    // Drag-to-dismiss on the handle zone. Reads the latest props through refs
+    // so the responder (created once) never closes over a stale callback.
+    const onRequestCloseRef = useRef(onRequestClose);
+    onRequestCloseRef.current = onRequestClose;
+    const dragDistanceRef = useRef(dismissDragDistance);
+    dragDistanceRef.current = dismissDragDistance;
+    const dragEnabledRef = useRef(dragToDismiss);
+    dragEnabledRef.current = dragToDismiss;
+    const dragPan = useRef(PanResponder.create({
+        onMoveShouldSetPanResponder: (_e, g) => dragEnabledRef.current && g.dy > 6 && Math.abs(g.dy) > Math.abs(g.dx),
+        onMoveShouldSetPanResponderCapture: (_e, g) => dragEnabledRef.current && g.dy > 6 && Math.abs(g.dy) > Math.abs(g.dx),
+        onPanResponderMove: (_e, g) => {
+            // Only downward; a pull UP rubber-bands slightly so it reads as
+            // "the sheet is as high as it goes".
+            translateY.setValue(g.dy > 0 ? g.dy : g.dy * 0.15);
+        },
+        onPanResponderRelease: (_e, g) => {
+            const shouldClose = g.dy > dragDistanceRef.current || g.vy > 0.8;
+            if (shouldClose) {
+                onRequestCloseRef.current();
+                return;
+            }
+            Animated.spring(translateY, {
+                toValue: 0,
+                friction: 8,
+                tension: 80,
+                useNativeDriver: true,
+            }).start();
+        },
+        onPanResponderTerminate: () => {
+            Animated.spring(translateY, { toValue: 0, useNativeDriver: true }).start();
+        },
+    })).current;
     useEffect(() => {
         if (visible) {
             Animated.parallel([
@@ -113,7 +146,7 @@ export function BottomSheet({ visible, onRequestClose, colors, rtl = false, chil
                         transform: [{ translateY }],
                     },
                     style,
-                ], children: _jsx(Pressable, { onPress: () => { }, style: styles.sheetInner, children: _jsxs(Wrapper, { style: styles.sheetInner, children: [showGrabber ? (_jsx(View, { style: [styles.grabber, { backgroundColor: colors.rim }] })) : null, resolvedHeader, _jsx(View, { style: [styles.body, contentContainerStyle], children: children })] }) }) })] }));
+                ], children: _jsx(Pressable, { onPress: () => { }, style: styles.sheetInner, children: _jsxs(Wrapper, { style: styles.sheetInner, children: [_jsxs(View, { style: styles.dragZone, ...(dragToDismiss ? dragPan.panHandlers : null), children: [showGrabber ? (_jsx(View, { style: [styles.grabber, { backgroundColor: colors.rim }] })) : null, resolvedHeader] }), _jsx(View, { style: [styles.body, contentContainerStyle], children: children })] }) }) })] }));
 }
 /**
  * Keeps the sheet mounted for one more `duration` after `visible` goes
@@ -151,6 +184,9 @@ const styles = StyleSheet.create({
     },
     sheetInner: {
         flexShrink: 1,
+    },
+    dragZone: {
+        minHeight: 24,
     },
     grabber: {
         width: 40,

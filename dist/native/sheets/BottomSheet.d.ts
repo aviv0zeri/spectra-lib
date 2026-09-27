@@ -41,12 +41,17 @@ export interface BottomSheetProps {
     title?: string;
     headerLeft?: ReactNode;
     headerRight?: ReactNode;
-    /** Default `true` -- the small grab affordance under the header. Hide it
-     * for a sheet with no swipe-to-dismiss gesture of its own, so nothing
-     * promises a gesture this component doesn't implement (this version has
-     * none; backdrop tap and the header's own buttons are the only dismiss
-     * paths). */
+    /** Default `true` -- the small grab affordance under the header, which
+     * (with `dragToDismiss`) really does drag: pulling the handle/header area
+     * down past `dismissDragDistance` calls `onRequestClose`. */
     showGrabber?: boolean;
+    /** Default `true`. A downward drag on the grabber + header area follows
+     * the finger and, released past `dismissDragDistance` (or flicked), asks
+     * to close. Only that top zone is draggable on purpose: the body may
+     * scroll, and a body-wide drag would fight it. */
+    dragToDismiss?: boolean;
+    /** Default 80 (points). */
+    dismissDragDistance?: number;
     /** Fraction of the window height the sheet may grow to before its body
      * scrolls internally. Default 0.92, matching the ported prototype. */
     maxHeightRatio?: number;
@@ -73,5 +78,5 @@ export interface BottomSheetProps {
  * flip `visible`, the same lifecycle every other component in this package
  * uses.
  */
-export declare function BottomSheet({ visible, onRequestClose, colors, rtl, children, header, title, headerLeft, headerRight, showGrabber, maxHeightRatio, animationDuration, Container, style, contentContainerStyle, modalProps, onExited, testID, }: BottomSheetProps): import("react").JSX.Element | null;
+export declare function BottomSheet({ visible, onRequestClose, colors, rtl, children, header, title, headerLeft, headerRight, showGrabber, dragToDismiss, dismissDragDistance, maxHeightRatio, animationDuration, Container, style, contentContainerStyle, modalProps, onExited, testID, }: BottomSheetProps): import("react").JSX.Element | null;
 export {};
