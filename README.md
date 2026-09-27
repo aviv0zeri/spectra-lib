@@ -98,6 +98,40 @@ status code, a structured value, a trail of observations, "busy"). See
 runner: `npm test` (vitest + Testing Library, jsdom), with `*.test.jsx`
 files next to their components and excluded from the `tsc` build.
 
+**`src/native/`** (`spectra-lib/native`) — React Native status components:
+`StatusScreen` (a full-screen centered replacement) and `StatusBanner` (a
+non-blocking inline banner), joined 2026-09-10. GateOpen MobileApp had
+hand-rolled both — `ServerDownScreen.js`, `ConnectionBanner.js` — for its
+"the backend is unreachable" state, and every future RN app of Aviv's would
+otherwise have copied both by hand rather than pulling the theme/copy/icon
+out into props. Dependency-free beyond `react`/`react-native` (peers, both
+optional — see "Consuming it").
+
+Deliberate exclusions: no icon library (`icon` is a caller-supplied
+`ReactNode`, same as `Container`) and no default `Container` beyond a plain
+`View` (it exists so a consumer can drop in their own glass/blur surface —
+GateOpen's Liquid-Glass-aware `GlassSurface` — without this package taking
+on that dependency). `StatusColors` has no default palette either, same
+convention as `tokens.ts`'s DARK/LIGHT: the caller's theme is the only
+source.
+
+```jsx
+import { StatusScreen, StatusBanner } from 'spectra-lib/native';
+
+<StatusScreen
+  title={t('connection_server')}
+  message={t('connection_server_hint')}
+  icon={<Ionicons name="cloud-offline-outline" size={40} color="#c98a8a" />}
+  action={{ label: t('error_retry'), onPress: retry }}
+  colors={colors}
+  rtl={layoutRTL}
+/>
+```
+
+Metro caveat: this subpath (`spectra-lib/native`) resolves via package.json
+`exports`, which Metro only understands on RN ≥0.79 / Expo SDK 53+ — GateOpen
+MobileApp (Expo 54) already clears that bar.
+
 More projects' reusable pieces land here over time, each in its own
 subpath/export as they're extracted — this file's job is to stay accurate
 to what's actually here, not to promise a shape in advance.
