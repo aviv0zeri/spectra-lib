@@ -164,6 +164,10 @@ const styles = StyleSheet.create({
         paddingHorizontal: 8,
         paddingTop: 4,
         minHeight: 44,
+        // Pinned: `rtl` (row-reverse) must mean what it says even under a host
+        // that mirrors every plain row itself (GateOpen's hand-mirrored RTL
+        // shell), where an un-pinned row-reverse flips BACK to LTR.
+        direction: 'ltr',
     },
     headerSlot: {
         flex: 1,

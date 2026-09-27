@@ -145,6 +145,9 @@ const styles = StyleSheet.create({
     gap: 12,
     minHeight: 52,
     paddingHorizontal: 16,
+    // Pinned for the same reason as BottomSheet's header: a host that
+    // mirrors rows itself would otherwise double-flip `rtl`.
+    direction: 'ltr',
   },
   rowPressed: {
     opacity: 0.7,
