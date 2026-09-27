@@ -138,6 +138,13 @@ export interface BottomSheetProps {
    * presentation-mode conventions (e.g. `statusBarTranslucent`,
    * `presentationStyle`) without this package needing to know them. */
   modalProps?: Partial<ModalProps>;
+  /** Fires once the close animation has finished and the Modal has actually
+   * un-mounted -- the moment it is safe to present ANOTHER Modal-backed
+   * surface. Presenting one while this sheet's Modal is still leaving is
+   * silently dropped on iOS (a real bug GateOpen gates every dialog chain
+   * on), so a caller opening a follow-up sheet/dialog from a choice made
+   * here should do it from this callback, not from `onRequestClose`. */
+  onExited?: () => void;
   testID?: string;
 }
 
@@ -164,6 +171,7 @@ export function BottomSheet({
   style,
   contentContainerStyle,
   modalProps,
+  onExited,
   testID,
 }: BottomSheetProps) {
   const screenHeight = useMemo(() => Dimensions.get('window').height, []);
@@ -172,7 +180,7 @@ export function BottomSheet({
   // The Modal itself un-mounts only once the close animation finishes, or
   // the sheet would vanish instantly (no slide-down) the moment a caller
   // flips `visible` to false.
-  const mounted = useAnimatedMount(visible, animationDuration);
+  const mounted = useAnimatedMount(visible, animationDuration, onExited);
 
   useEffect(() => {
     if (visible) {
@@ -281,14 +289,25 @@ export function BottomSheet({
  * false, so the slide-down and scrim fade actually play instead of the
  * Modal disappearing on the same frame the caller flips the flag.
  */
-function useAnimatedMount(visible: boolean, duration: number): boolean {
+function useAnimatedMount(
+  visible: boolean,
+  duration: number,
+  onExited?: () => void,
+): boolean {
   const [mounted, setMounted] = useState(visible);
+  // Read through a ref so a caller passing a fresh arrow every render
+  // doesn't restart the un-mount timer mid-exit.
+  const onExitedRef = useRef(onExited);
+  onExitedRef.current = onExited;
   useEffect(() => {
     if (visible) {
       setMounted(true);
       return undefined;
     }
-    const timer = setTimeout(() => setMounted(false), duration);
+    const timer = setTimeout(() => {
+      setMounted(false);
+      onExitedRef.current?.();
+    }, duration);
     return () => clearTimeout(timer);
   }, [visible, duration]);
   return mounted;

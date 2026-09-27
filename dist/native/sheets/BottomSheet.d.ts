@@ -58,6 +58,13 @@ export interface BottomSheetProps {
      * presentation-mode conventions (e.g. `statusBarTranslucent`,
      * `presentationStyle`) without this package needing to know them. */
     modalProps?: Partial<ModalProps>;
+    /** Fires once the close animation has finished and the Modal has actually
+     * un-mounted -- the moment it is safe to present ANOTHER Modal-backed
+     * surface. Presenting one while this sheet's Modal is still leaving is
+     * silently dropped on iOS (a real bug GateOpen gates every dialog chain
+     * on), so a caller opening a follow-up sheet/dialog from a choice made
+     * here should do it from this callback, not from `onRequestClose`. */
+    onExited?: () => void;
     testID?: string;
 }
 /**
@@ -66,5 +73,5 @@ export interface BottomSheetProps {
  * flip `visible`, the same lifecycle every other component in this package
  * uses.
  */
-export declare function BottomSheet({ visible, onRequestClose, colors, rtl, children, header, title, headerLeft, headerRight, showGrabber, maxHeightRatio, animationDuration, Container, style, contentContainerStyle, modalProps, testID, }: BottomSheetProps): import("react").JSX.Element | null;
+export declare function BottomSheet({ visible, onRequestClose, colors, rtl, children, header, title, headerLeft, headerRight, showGrabber, maxHeightRatio, animationDuration, Container, style, contentContainerStyle, modalProps, onExited, testID, }: BottomSheetProps): import("react").JSX.Element | null;
 export {};
