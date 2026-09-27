@@ -116,3 +116,5 @@ export type { HebrewDate } from './calendar/hebrewDate';
 export { floorDiv, mod, gregorianLeapYear, fixedFromGregorian, gregorianFromFixed, gregorianYearFromFixed, } from './calendar/fixedDay';
 export { NotificationBanner, NotificationRow, PushTester, PushTesterController, PUSH_TESTER_DELAYS, usePushTester, } from './notifications';
 export type { NotificationBannerProps, NotificationDismissDirection, NotificationRowProps, NotificationAction, NotificationColors, NotificationContainerProps, PushTesterClient, PushTesterControllerOptions, PushTesterIcons, PushTesterLabels, PushTesterProps, PushTesterState, PushTesterStatus, SentTest, } from './notifications';
+export { BottomSheet, SheetHeader, OptionRow, OptionList } from './sheets';
+export type { BottomSheetProps, SheetHeaderProps, OptionRowProps, OptionListProps, SheetColors, OptionRowColors, } from './sheets';

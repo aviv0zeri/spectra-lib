@@ -160,3 +160,10 @@ export { floorDiv, mod, gregorianLeapYear, fixedFromGregorian, gregorianFromFixe
 // NotificationEvent as-is. See ./notifications/README.md.
 // ---------------------------------------------------------------------------
 export { NotificationBanner, NotificationRow, PushTester, PushTesterController, PUSH_TESTER_DELAYS, usePushTester, } from './notifications';
+// ---------------------------------------------------------------------------
+// Sheets -- a bottom sheet (scrim + rounded slide-up panel + optional
+// title/Cancel/Done header) and a vertical radio-row option list, the two
+// shapes a GateOpen Figma-to-HTML redesign round used three different
+// pickers to hand-build. See ./sheets/*.
+// ---------------------------------------------------------------------------
+export { BottomSheet, SheetHeader, OptionRow, OptionList } from './sheets';
