@@ -198,18 +198,34 @@ export function BottomSheet({
   dragDistanceRef.current = dismissDragDistance;
   const dragEnabledRef = useRef(dragToDismiss);
   dragEnabledRef.current = dragToDismiss;
+  // A gesture already in progress when the caller (or this same drag's own
+  // release) flips `visible` false must stop touching `translateY` at
+  // once: the CLOSE `Animated.timing` below (useNativeDriver: true) is
+  // about to own that node, and a JS-driven `setValue` racing it there is a
+  // real Animated invariant violation, not just a visual glitch --
+  // reproduced live as a "drag" error right after a drag-to-dismiss close.
+  const visibleRef = useRef(visible);
+  visibleRef.current = visible;
   const dragPan = useRef(
     PanResponder.create({
       onMoveShouldSetPanResponder: (_e, g) =>
-        dragEnabledRef.current && g.dy > 6 && Math.abs(g.dy) > Math.abs(g.dx),
+        visibleRef.current &&
+        dragEnabledRef.current &&
+        g.dy > 6 &&
+        Math.abs(g.dy) > Math.abs(g.dx),
       onMoveShouldSetPanResponderCapture: (_e, g) =>
-        dragEnabledRef.current && g.dy > 6 && Math.abs(g.dy) > Math.abs(g.dx),
+        visibleRef.current &&
+        dragEnabledRef.current &&
+        g.dy > 6 &&
+        Math.abs(g.dy) > Math.abs(g.dx),
       onPanResponderMove: (_e, g) => {
+        if (!visibleRef.current) return;
         // Only downward; a pull UP rubber-bands slightly so it reads as
         // "the sheet is as high as it goes".
         translateY.setValue(g.dy > 0 ? g.dy : g.dy * 0.15);
       },
       onPanResponderRelease: (_e, g) => {
+        if (!visibleRef.current) return;
         const shouldClose = g.dy > dragDistanceRef.current || g.vy > 0.8;
         if (shouldClose) {
           onRequestCloseRef.current();
@@ -223,6 +239,7 @@ export function BottomSheet({
         }).start();
       },
       onPanResponderTerminate: () => {
+        if (!visibleRef.current) return;
         Animated.spring(translateY, { toValue: 0, useNativeDriver: true }).start();
       },
     }),
@@ -290,8 +307,17 @@ export function BottomSheet({
       testID={testID}
       {...modalProps}
     >
+      {/* pointerEvents gated by `visible`, not `mounted`: this Pressable
+          is StyleSheet.absoluteFillObject over the WHOLE screen, and the
+          Modal stays mounted for the length of the exit animation (see
+          useAnimatedMount) so the slide-down actually plays. Ungated, it
+          swallowed every touch on the entire screen -- including ones
+          meant for whatever is underneath, like a guest page's preview
+          button -- for that whole window after a caller (or a
+          drag-to-dismiss release) already flipped `visible` false. */}
       <Pressable
         style={StyleSheet.absoluteFillObject}
+        pointerEvents={visible ? 'auto' : 'none'}
         onPress={onRequestClose}
         accessibilityRole="button"
         accessibilityLabel="dismiss"
@@ -304,6 +330,7 @@ export function BottomSheet({
         />
       </Pressable>
       <Animated.View
+        pointerEvents={visible ? 'auto' : 'none'}
         style={[
           styles.sheet,
           {
@@ -321,7 +348,20 @@ export function BottomSheet({
             {/* The drag zone: grabber + header. A View of its own so the
                 responder's touch area is exactly the top strip, with a
                 minimum height even when both are absent. */}
-            <View style={styles.dragZone} {...(dragToDismiss ? dragPan.panHandlers : null)}>
+            {/* `visible &&`, not just `dragToDismiss`: releasing the
+                responder the instant a close starts (caller-driven OR this
+                same drag's own release, below) stops a second gesture from
+                calling `translateY.setValue` -- a JS-driven write -- onto a
+                node the CLOSE `Animated.timing` (useNativeDriver: true,
+                still running for `animationDuration`) has moved to the
+                native side. That mix is a real RN Animated invariant
+                violation, not just a visual glitch: reproduced live as
+                "drag" errors on a tap that landed right after a
+                drag-to-dismiss close (GateOpen, 2026-09-28). */}
+            <View
+              style={styles.dragZone}
+              {...(visible && dragToDismiss ? dragPan.panHandlers : null)}
+            >
               {showGrabber ? (
                 <View style={[styles.grabber, { backgroundColor: colors.rim }]} />
               ) : null}

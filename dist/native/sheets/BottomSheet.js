@@ -68,15 +68,33 @@ export function BottomSheet({ visible, onRequestClose, colors, rtl = false, chil
     dragDistanceRef.current = dismissDragDistance;
     const dragEnabledRef = useRef(dragToDismiss);
     dragEnabledRef.current = dragToDismiss;
+    // A gesture already in progress when the caller (or this same drag's own
+    // release) flips `visible` false must stop touching `translateY` at
+    // once: the CLOSE `Animated.timing` below (useNativeDriver: true) is
+    // about to own that node, and a JS-driven `setValue` racing it there is a
+    // real Animated invariant violation, not just a visual glitch --
+    // reproduced live as a "drag" error right after a drag-to-dismiss close.
+    const visibleRef = useRef(visible);
+    visibleRef.current = visible;
     const dragPan = useRef(PanResponder.create({
-        onMoveShouldSetPanResponder: (_e, g) => dragEnabledRef.current && g.dy > 6 && Math.abs(g.dy) > Math.abs(g.dx),
-        onMoveShouldSetPanResponderCapture: (_e, g) => dragEnabledRef.current && g.dy > 6 && Math.abs(g.dy) > Math.abs(g.dx),
+        onMoveShouldSetPanResponder: (_e, g) => visibleRef.current &&
+            dragEnabledRef.current &&
+            g.dy > 6 &&
+            Math.abs(g.dy) > Math.abs(g.dx),
+        onMoveShouldSetPanResponderCapture: (_e, g) => visibleRef.current &&
+            dragEnabledRef.current &&
+            g.dy > 6 &&
+            Math.abs(g.dy) > Math.abs(g.dx),
         onPanResponderMove: (_e, g) => {
+            if (!visibleRef.current)
+                return;
             // Only downward; a pull UP rubber-bands slightly so it reads as
             // "the sheet is as high as it goes".
             translateY.setValue(g.dy > 0 ? g.dy : g.dy * 0.15);
         },
         onPanResponderRelease: (_e, g) => {
+            if (!visibleRef.current)
+                return;
             const shouldClose = g.dy > dragDistanceRef.current || g.vy > 0.8;
             if (shouldClose) {
                 onRequestCloseRef.current();
@@ -90,6 +108,8 @@ export function BottomSheet({ visible, onRequestClose, colors, rtl = false, chil
             }).start();
         },
         onPanResponderTerminate: () => {
+            if (!visibleRef.current)
+                return;
             Animated.spring(translateY, { toValue: 0, useNativeDriver: true }).start();
         },
     })).current;
@@ -135,10 +155,10 @@ export function BottomSheet({ visible, onRequestClose, colors, rtl = false, chil
         : title !== undefined || headerLeft !== undefined || headerRight !== undefined
             ? (_jsx(SheetHeader, { left: headerLeft, title: title, right: headerRight, colors: colors, rtl: rtl }))
             : null;
-    return (_jsxs(Modal, { visible: true, transparent: true, animationType: "none", onRequestClose: onRequestClose, statusBarTranslucent: true, testID: testID, ...modalProps, children: [_jsx(Pressable, { style: StyleSheet.absoluteFillObject, onPress: onRequestClose, accessibilityRole: "button", accessibilityLabel: "dismiss", children: _jsx(Animated.View, { style: [
+    return (_jsxs(Modal, { visible: true, transparent: true, animationType: "none", onRequestClose: onRequestClose, statusBarTranslucent: true, testID: testID, ...modalProps, children: [_jsx(Pressable, { style: StyleSheet.absoluteFillObject, pointerEvents: visible ? 'auto' : 'none', onPress: onRequestClose, accessibilityRole: "button", accessibilityLabel: "dismiss", children: _jsx(Animated.View, { style: [
                         StyleSheet.absoluteFillObject,
                         { backgroundColor: colors.scrim, opacity: scrimOpacity },
-                    ] }) }), _jsx(Animated.View, { style: [
+                    ] }) }), _jsx(Animated.View, { pointerEvents: visible ? 'auto' : 'none', style: [
                     styles.sheet,
                     {
                         backgroundColor: colors.panel,
@@ -146,7 +166,7 @@ export function BottomSheet({ visible, onRequestClose, colors, rtl = false, chil
                         transform: [{ translateY }],
                     },
                     style,
-                ], children: _jsx(Pressable, { onPress: () => { }, style: styles.sheetInner, children: _jsxs(Wrapper, { style: styles.sheetInner, children: [_jsxs(View, { style: styles.dragZone, ...(dragToDismiss ? dragPan.panHandlers : null), children: [showGrabber ? (_jsx(View, { style: [styles.grabber, { backgroundColor: colors.rim }] })) : null, resolvedHeader] }), _jsx(View, { style: [styles.body, contentContainerStyle], children: children })] }) }) })] }));
+                ], children: _jsx(Pressable, { onPress: () => { }, style: styles.sheetInner, children: _jsxs(Wrapper, { style: styles.sheetInner, children: [_jsxs(View, { style: styles.dragZone, ...(visible && dragToDismiss ? dragPan.panHandlers : null), children: [showGrabber ? (_jsx(View, { style: [styles.grabber, { backgroundColor: colors.rim }] })) : null, resolvedHeader] }), _jsx(View, { style: [styles.body, contentContainerStyle], children: children })] }) }) })] }));
 }
 /**
  * Keeps the sheet mounted for one more `duration` after `visible` goes
