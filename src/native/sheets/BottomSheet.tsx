@@ -15,49 +15,69 @@
  * list reads naturally anchored under its own trigger pill near the
  * screen's top, not sliding up from the opposite edge).
  *
- * Deliberately animated with `Animated`, not RN's Modal's own
- * `animationType`, and mounted with `animationType="none"`: a fading Modal
- * blocks touches app-wide for the length of its OWN fade (a real bug this
- * package's first consumer hit and fixed -- see GateOpen's box-dismiss-tap-
- * lag fix). Driving the slide and the scrim's opacity ourselves means the
- * backdrop is tappable the instant it's visible, never a beat late.
+ * Drag-to-dismiss runs on react-native-gesture-handler's Gesture.Pan() +
+ * react-native-reanimated shared values, not RN's own PanResponder +
+ * Animated (what every earlier version of this file used). That's not a
+ * style preference -- PanResponder's move/release callbacks run on the JS
+ * thread, round-tripping every touch sample through the bridge before a
+ * `translateY.setValue()` can take effect; under any JS-thread load (or
+ * sometimes none at all) that reads as exactly what Aviv hit live:
+ * "either closes from a big push or nothing, no little drags." Gesture
+ * Pan's `.onChange`/`.onEnd` are worklets -- they run ON the UI thread,
+ * same thread the rendered transform lives on, no round trip, which is
+ * the same architecture every serious RN sheet (gorhom/react-native-
+ * bottom-sheet chief among them) uses for exactly this reason. See
+ * `panGesture` below.
+ *
+ * Still mounted with Modal's own `animationType="none"` and animated by
+ * hand: a fading Modal blocks touches app-wide for the length of its OWN
+ * fade (a real bug this package's first consumer hit and fixed -- see
+ * GateOpen's box-dismiss-tap-lag fix). Driving the slide and the scrim's
+ * opacity ourselves means the backdrop is tappable the instant it's
+ * visible, never a beat late.
  *
  * The sheet slides in from `Dimensions.get('window').height` (negated for
- * `edge: 'top'`), not from its own measured height -- an RN Animated value
- * can't reference "my own height" without a layout round-trip, and
- * starting from the full screen height always fully hides the sheet
- * regardless of its content, at the cost of one extra frame the sheet
- * spends already-off-screen before the slide-in begins (imperceptible in
+ * `edge: 'top'`), not from its own measured height -- a shared value can't
+ * reference "my own height" without a layout round-trip, and starting
+ * from the full screen height always fully hides the sheet regardless of
+ * its content, at the cost of one extra frame the sheet spends
+ * already-off-screen before the slide-in begins (imperceptible in
  * practice).
  *
  * The grab handle sits at the panel's own FREE edge -- the one facing away
  * from the screen edge it's anchored to, since that's the edge a user
  * would actually pull on. For `edge: 'bottom'` (the default) that's the
  * panel's top, grouped with the header into one draggable zone, same as
- * before this prop existed. For `edge: 'top'` that's the panel's bottom,
- * so the header renders separately, near the panel's anchored (top) edge,
+ * before `edge` existed. For `edge: 'top'` that's the panel's bottom, so
+ * the header renders separately, near the panel's anchored (top) edge,
  * and only the grabber itself is draggable, after the body. Drag-to-
- * dismiss direction mirrors the same way: pull toward the panel's own free
- * edge to dismiss, rubber-banding slightly the other way.
+ * dismiss direction mirrors the same way: pull toward the panel's own
+ * free edge to dismiss, clamped (not rubber-banded) the other way -- full
+ * 1:1 tracking in both directions, right up to the resting position, that
+ * being the whole point of moving off PanResponder. The zone itself is a
+ * 44pt-minimum touch target (Apple's HIG minimum) regardless of edge --
+ * for `edge: 'bottom'` the header's own 44 `minHeight` already covered
+ * that; for `edge: 'top'` (grabber alone) it didn't, and the resulting
+ * ~21px zone was the real cause of the "no little drags" symptom above,
+ * not the drag physics themselves.
  *
  * Deliberately excluded, same boundary as the rest of this package: no
  * icon library, no default `Container` beyond a plain `View` (a caller's
  * glass/blur surface can slot in as the sheet's own panel), no default
  * colors anywhere in `SheetColors`.
  */
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import type { ComponentType, ReactNode } from 'react';
-import {
-  Animated,
-  Dimensions,
-  Modal,
-  PanResponder,
-  Pressable,
-  StyleSheet,
-  Text,
-  View,
-} from 'react-native';
+import { Dimensions, Modal, Pressable, StyleSheet, Text, View } from 'react-native';
 import type { ModalProps, StyleProp, TextStyle, ViewStyle } from 'react-native';
+import { Gesture, GestureDetector } from 'react-native-gesture-handler';
+import Animated, {
+  runOnJS,
+  useAnimatedStyle,
+  useSharedValue,
+  withSpring,
+  withTiming,
+} from 'react-native-reanimated';
 import type { SheetColors } from './types';
 
 type SheetContainerProps = {
@@ -209,112 +229,78 @@ export function BottomSheet({
   const top = edge === 'top';
   const screenHeight = useMemo(() => Dimensions.get('window').height, []);
   const hiddenY = top ? -screenHeight : screenHeight;
-  const translateY = useRef(new Animated.Value(hiddenY)).current;
-  const scrimOpacity = useRef(new Animated.Value(0)).current;
+  const translateY = useSharedValue(hiddenY);
+  const scrimOpacity = useSharedValue(0);
   // The Modal itself un-mounts only once the close animation finishes, or
   // the sheet would vanish instantly (no slide) the moment a caller flips
   // `visible` to false.
   const mounted = useAnimatedMount(visible, animationDuration, onExited);
 
-  // Drag-to-dismiss on the grab zone. Reads the latest props through refs
-  // so the responder (created once) never closes over a stale callback.
-  const onRequestCloseRef = useRef(onRequestClose);
-  onRequestCloseRef.current = onRequestClose;
-  const dragDistanceRef = useRef(dismissDragDistance);
-  dragDistanceRef.current = dismissDragDistance;
-  const dragEnabledRef = useRef(dragToDismiss);
-  dragEnabledRef.current = dragToDismiss;
-  // A gesture already in progress when the caller (or this same drag's own
-  // release) flips `visible` false must stop touching `translateY` at
-  // once: the CLOSE `Animated.timing` below (useNativeDriver: true) is
-  // about to own that node, and a JS-driven `setValue` racing it there is a
-  // real Animated invariant violation, not just a visual glitch --
-  // reproduced live as a "drag" error right after a drag-to-dismiss close.
-  const visibleRef = useRef(visible);
-  visibleRef.current = visible;
-  const dragPan = useRef(
-    PanResponder.create({
-      onMoveShouldSetPanResponder: (_e, g) =>
-        visibleRef.current &&
-        dragEnabledRef.current &&
-        (top ? g.dy < -6 : g.dy > 6) &&
-        Math.abs(g.dy) > Math.abs(g.dx),
-      onMoveShouldSetPanResponderCapture: (_e, g) =>
-        visibleRef.current &&
-        dragEnabledRef.current &&
-        (top ? g.dy < -6 : g.dy > 6) &&
-        Math.abs(g.dy) > Math.abs(g.dx),
-      onPanResponderMove: (_e, g) => {
-        if (!visibleRef.current) return;
-        // Full 1:1 tracking toward the panel's free edge, in BOTH
-        // directions once the gesture has engaged -- a drag that reverses
-        // mid-gesture (up past the activation threshold, then back down)
-        // follows the finger back just as precisely, not damped. Only
-        // clamped at 0 (the resting, fully-shown position): nothing past
-        // it to reveal, so going further would just open a gap between
-        // the panel's own anchored edge and the real screen edge.
-        if (top) {
-          translateY.setValue(Math.min(g.dy, 0));
-        } else {
-          translateY.setValue(Math.max(g.dy, 0));
-        }
-      },
-      onPanResponderRelease: (_e, g) => {
-        if (!visibleRef.current) return;
-        const shouldClose = top
-          ? g.dy < -dragDistanceRef.current || g.vy < -0.8
-          : g.dy > dragDistanceRef.current || g.vy > 0.8;
-        if (shouldClose) {
-          onRequestCloseRef.current();
-          return;
-        }
-        Animated.spring(translateY, {
-          toValue: 0,
-          friction: 8,
-          tension: 80,
-          useNativeDriver: true,
-        }).start();
-      },
-      onPanResponderTerminate: () => {
-        if (!visibleRef.current) return;
-        Animated.spring(translateY, { toValue: 0, useNativeDriver: true }).start();
-      },
-    }),
-  ).current;
-
   useEffect(() => {
-    if (visible) {
-      Animated.parallel([
-        Animated.timing(translateY, {
-          toValue: 0,
-          duration: animationDuration,
-          useNativeDriver: true,
-        }),
-        Animated.timing(scrimOpacity, {
-          toValue: 1,
-          duration: animationDuration,
-          useNativeDriver: true,
-        }),
-      ]).start();
-    } else {
-      Animated.parallel([
-        Animated.timing(translateY, {
-          toValue: hiddenY,
-          duration: animationDuration,
-          useNativeDriver: true,
-        }),
-        Animated.timing(scrimOpacity, {
-          toValue: 0,
-          duration: animationDuration,
-          useNativeDriver: true,
-        }),
-      ]).start();
-    }
-    // translateY/scrimOpacity/hiddenY are refs/derived from a memo -- stable
-    // identity, deliberately left out so this effect only re-fires on the
-    // props that actually change.
+    translateY.value = withTiming(visible ? 0 : hiddenY, { duration: animationDuration });
+    scrimOpacity.value = withTiming(visible ? 1 : 0, { duration: animationDuration });
+    // translateY/scrimOpacity are shared values -- stable identity,
+    // deliberately left out so this effect only re-fires on the props
+    // that actually change.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [visible, animationDuration]);
+  }, [visible, animationDuration, hiddenY]);
+
+  // Built fresh each render (not behind useRef/useMemo with an empty dep
+  // array) so every worklet closure below -- `top`, `dismissDragDistance`,
+  // `onRequestClose` -- is always this render's actual value. Reanimated's
+  // babel plugin captures referenced outer variables BY VALUE at the point
+  // the gesture object is constructed, so a gesture built once and reused
+  // across renders would permanently close over whatever those props were
+  // on the FIRST render -- rebuilding it is what keeps it current, same
+  // reasoning the old PanResponder version used refs for.
+  const panGesture = Gesture.Pan()
+    .enabled(visible && dragToDismiss)
+    // Vertical-only: fails (hands off to whatever's underneath, e.g. a
+    // horizontal swipe elsewhere) if the gesture moves mostly sideways,
+    // activates once it's moved `activationDistance` toward the panel's
+    // own free edge.
+    .failOffsetX([-12, 12])
+    .activeOffsetY(top ? [-12, 1000] : [-1000, 12])
+    .onChange((e) => {
+      'worklet';
+      // Full 1:1 tracking toward the panel's free edge, in BOTH
+      // directions once the gesture has engaged -- a drag that reverses
+      // mid-gesture follows the finger back just as precisely, not
+      // damped. `e.translationY` is cumulative from the gesture's own
+      // start (where `translateY.value` is always 0, the resting
+      // position -- this only runs while `visible`), so it can be
+      // applied directly rather than accumulated by hand. Clamped at 0:
+      // nothing past the resting position to reveal, so going further
+      // would just open a gap between the panel's own anchored edge and
+      // the real screen edge.
+      translateY.value = top ? Math.min(e.translationY, 0) : Math.max(e.translationY, 0);
+    })
+    .onEnd((e) => {
+      'worklet';
+      const shouldClose = top
+        ? e.translationY < -dismissDragDistance || e.velocityY < -800
+        : e.translationY > dismissDragDistance || e.velocityY > 800;
+      if (shouldClose) {
+        runOnJS(onRequestClose)();
+        return;
+      }
+      translateY.value = withSpring(0, { damping: 18, stiffness: 180 });
+    })
+    .onFinalize((e, success) => {
+      'worklet';
+      // Gesture cancelled (e.g. an ancestor claimed it) rather than
+      // released normally -- spring back same as a release that didn't
+      // clear the dismiss threshold, mirroring the old PanResponder
+      // version's onPanResponderTerminate.
+      if (!success) {
+        translateY.value = withSpring(0, { damping: 18, stiffness: 180 });
+      }
+    });
+
+  const sheetAnimatedStyle = useAnimatedStyle(() => ({
+    transform: [{ translateY: translateY.value }],
+  }));
+  const scrimAnimatedStyle = useAnimatedStyle(() => ({ opacity: scrimOpacity.value }));
 
   if (!mounted) return null;
 
@@ -334,10 +320,21 @@ export function BottomSheet({
           )
         : null;
 
-  const grabZoneProps = visible && dragToDismiss ? dragPan.panHandlers : null;
   const grabber = showGrabber ? (
     <View style={[styles.grabber, { backgroundColor: colors.rim }]} />
   ) : null;
+  const dragZone = (
+    <GestureDetector gesture={panGesture}>
+      <View style={styles.dragZone}>
+        {top ? grabber : (
+          <>
+            {grabber}
+            {resolvedHeader}
+          </>
+        )}
+      </View>
+    </GestureDetector>
+  );
 
   return (
     <Modal
@@ -367,7 +364,8 @@ export function BottomSheet({
         <Animated.View
           style={[
             StyleSheet.absoluteFillObject,
-            { backgroundColor: colors.scrim, opacity: scrimOpacity },
+            { backgroundColor: colors.scrim },
+            scrimAnimatedStyle,
           ]}
         />
       </Pressable>
@@ -379,8 +377,8 @@ export function BottomSheet({
           {
             backgroundColor: colors.panel,
             maxHeight: `${maxHeightRatio * 100}%`,
-            transform: [{ translateY }],
           },
+          sheetAnimatedStyle,
           style,
         ]}
       >
@@ -396,19 +394,14 @@ export function BottomSheet({
                     the body, is. See this file's module doc. */}
                 {resolvedHeader}
                 <View style={[styles.body, contentContainerStyle]}>{children}</View>
-                <View style={styles.dragZone} {...grabZoneProps}>
-                  {grabber}
-                </View>
+                {dragZone}
               </>
             ) : (
               <>
                 {/* `edge: 'bottom'` (default, unchanged from before `edge`
                     existed): grabber + header together form one draggable
                     zone at the panel's own free (top) edge. */}
-                <View style={styles.dragZone} {...grabZoneProps}>
-                  {grabber}
-                  {resolvedHeader}
-                </View>
+                {dragZone}
                 <View style={[styles.body, contentContainerStyle]}>{children}</View>
               </>
             )}
@@ -430,10 +423,6 @@ function useAnimatedMount(
   onExited?: () => void,
 ): boolean {
   const [mounted, setMounted] = useState(visible);
-  // Read through a ref so a caller passing a fresh arrow every render
-  // doesn't restart the un-mount timer mid-exit.
-  const onExitedRef = useRef(onExited);
-  onExitedRef.current = onExited;
   useEffect(() => {
     if (visible) {
       setMounted(true);
@@ -441,9 +430,12 @@ function useAnimatedMount(
     }
     const timer = setTimeout(() => {
       setMounted(false);
-      onExitedRef.current?.();
+      onExited?.();
     }, duration);
     return () => clearTimeout(timer);
+    // `onExited` deliberately excluded: a caller passing a fresh arrow
+    // every render must not restart this timer mid-exit.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [visible, duration]);
   return mounted;
 }
@@ -473,11 +465,7 @@ const styles = StyleSheet.create({
   // header, whose own 44 `minHeight` already covered it -- but `edge:
   // 'top'` (grabber alone, after the body, see this file's module doc)
   // had nothing else supplying that height, so its real touchable area
-  // was the grabber's own ~21px. A small, careful drag starting just
-  // outside that strip missed the responder entirely and did nothing; a
-  // fast big one that happened to land on it read as a flick straight
-  // past the dismiss threshold -- exactly "little drags do nothing, big
-  // ones just close it" (Aviv, on-device).
+  // was the grabber's own ~21px.
   dragZone: {
     minHeight: 44,
     width: '100%',
