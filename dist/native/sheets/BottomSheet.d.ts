@@ -34,6 +34,10 @@ export interface BottomSheetProps {
     onRequestClose: () => void;
     colors: SheetColors;
     rtl?: boolean;
+    /** Which screen edge the panel anchors to and slides in from. Default
+     * `'bottom'` -- the original, only ever shape this component had before
+     * `'top'` was added. */
+    edge?: 'bottom' | 'top';
     children?: ReactNode;
     /** A fully custom header; takes over from `title`/`headerLeft`/
      * `headerRight` when given. */
@@ -41,14 +45,15 @@ export interface BottomSheetProps {
     title?: string;
     headerLeft?: ReactNode;
     headerRight?: ReactNode;
-    /** Default `true` -- the small grab affordance under the header, which
-     * (with `dragToDismiss`) really does drag: pulling the handle/header area
-     * down past `dismissDragDistance` calls `onRequestClose`. */
+    /** Default `true` -- the small grab affordance at the panel's free edge,
+     * which (with `dragToDismiss`) really does drag: pulling it toward that
+     * free edge past `dismissDragDistance` calls `onRequestClose`. */
     showGrabber?: boolean;
-    /** Default `true`. A downward drag on the grabber + header area follows
-     * the finger and, released past `dismissDragDistance` (or flicked), asks
-     * to close. Only that top zone is draggable on purpose: the body may
-     * scroll, and a body-wide drag would fight it. */
+    /** Default `true`. A drag toward the panel's free edge on the grabber
+     * (+ header, for `edge: 'bottom'`) zone follows the finger and, released
+     * past `dismissDragDistance` (or flicked), asks to close. Only that zone
+     * is draggable on purpose: the body may scroll, and a body-wide drag
+     * would fight it. */
     dragToDismiss?: boolean;
     /** Default 80 (points). */
     dismissDragDistance?: number;
@@ -76,7 +81,9 @@ export interface BottomSheetProps {
  * `BottomSheet` owns presentation (scrim, slide, rounded panel, optional
  * header); it never owns whether it's open. Mount it once per sheet and
  * flip `visible`, the same lifecycle every other component in this package
- * uses.
+ * uses. The name predates `edge: 'top'` and stays for compatibility --
+ * every existing caller is a bottom sheet, and "EdgeSheet" would have cost
+ * every one of them a rename for no behavior change.
  */
-export declare function BottomSheet({ visible, onRequestClose, colors, rtl, children, header, title, headerLeft, headerRight, showGrabber, dragToDismiss, dismissDragDistance, maxHeightRatio, animationDuration, Container, style, contentContainerStyle, modalProps, onExited, testID, }: BottomSheetProps): import("react").JSX.Element | null;
+export declare function BottomSheet({ visible, onRequestClose, colors, rtl, edge, children, header, title, headerLeft, headerRight, showGrabber, dragToDismiss, dismissDragDistance, maxHeightRatio, animationDuration, Container, style, contentContainerStyle, modalProps, onExited, testID, }: BottomSheetProps): import("react").JSX.Element | null;
 export {};

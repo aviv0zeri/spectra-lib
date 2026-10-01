@@ -1,15 +1,20 @@
-import { jsx as _jsx, jsxs as _jsxs } from "react/jsx-runtime";
+import { jsx as _jsx, jsxs as _jsxs, Fragment as _Fragment } from "react/jsx-runtime";
 /**
- * A native bottom sheet: rounded-top panel that slides up from the bottom
- * over a dimmed scrim, with an optional grab handle and a three-slot header
- * (left / centered title / right) -- iOS's own sheet-with-nav-bar shape,
- * and the same silhouette as a web bottom sheet (rounded top corners, a
- * centered title between two text buttons, a small grab affordance).
+ * A native edge sheet: rounded panel that slides in from the screen's top
+ * or bottom edge over a dimmed scrim, with an optional grab handle and a
+ * three-slot header (left / centered title / right) -- iOS's own
+ * sheet-with-nav-bar shape, and the same silhouette as a web bottom sheet
+ * (rounded corners at the free edge, a centered title between two text
+ * buttons, a small grab affordance).
  *
  * Ported from a GateOpen Figma-to-HTML redesign round of the Guests screens
  * (2026-09) -- that prototype's `.sheet`/`.sh-head`/`.grab` were themselves
  * generic (a title row + Cancel/Done + rounded corners), and every future
  * RN app of Aviv's needing a sheet would otherwise re-copy the same shape.
+ * `edge: 'top'` added 2026-10-01 for GateOpen's Welcome language picker
+ * (Aviv: "come from the top instead a reverse component" -- a dropdown
+ * list reads naturally anchored under its own trigger pill near the
+ * screen's top, not sliding up from the opposite edge).
  *
  * Deliberately animated with `Animated`, not RN's Modal's own
  * `animationType`, and mounted with `animationType="none"`: a fading Modal
@@ -18,12 +23,23 @@ import { jsx as _jsx, jsxs as _jsxs } from "react/jsx-runtime";
  * lag fix). Driving the slide and the scrim's opacity ourselves means the
  * backdrop is tappable the instant it's visible, never a beat late.
  *
- * The sheet slides up from `Dimensions.get('window').height`, not from its
- * own measured height -- an RN Animated value can't reference "my own
- * height" without a layout round-trip, and starting from the full screen
- * height always fully hides the sheet regardless of its content, at the
- * cost of one extra frame the sheet spends already-off-screen before the
- * slide-in begins (imperceptible in practice).
+ * The sheet slides in from `Dimensions.get('window').height` (negated for
+ * `edge: 'top'`), not from its own measured height -- an RN Animated value
+ * can't reference "my own height" without a layout round-trip, and
+ * starting from the full screen height always fully hides the sheet
+ * regardless of its content, at the cost of one extra frame the sheet
+ * spends already-off-screen before the slide-in begins (imperceptible in
+ * practice).
+ *
+ * The grab handle sits at the panel's own FREE edge -- the one facing away
+ * from the screen edge it's anchored to, since that's the edge a user
+ * would actually pull on. For `edge: 'bottom'` (the default) that's the
+ * panel's top, grouped with the header into one draggable zone, same as
+ * before this prop existed. For `edge: 'top'` that's the panel's bottom,
+ * so the header renders separately, near the panel's anchored (top) edge,
+ * and only the grabber itself is draggable, after the body. Drag-to-
+ * dismiss direction mirrors the same way: pull toward the panel's own free
+ * edge to dismiss, rubber-banding slightly the other way.
  *
  * Deliberately excluded, same boundary as the rest of this package: no
  * icon library, no default `Container` beyond a plain `View` (a caller's
@@ -50,17 +66,21 @@ export function SheetHeader({ left, title, right, colors, rtl = false, titleStyl
  * `BottomSheet` owns presentation (scrim, slide, rounded panel, optional
  * header); it never owns whether it's open. Mount it once per sheet and
  * flip `visible`, the same lifecycle every other component in this package
- * uses.
+ * uses. The name predates `edge: 'top'` and stays for compatibility --
+ * every existing caller is a bottom sheet, and "EdgeSheet" would have cost
+ * every one of them a rename for no behavior change.
  */
-export function BottomSheet({ visible, onRequestClose, colors, rtl = false, children, header, title, headerLeft, headerRight, showGrabber = true, dragToDismiss = true, dismissDragDistance = 80, maxHeightRatio = 0.92, animationDuration = 240, Container, style, contentContainerStyle, modalProps, onExited, testID, }) {
+export function BottomSheet({ visible, onRequestClose, colors, rtl = false, edge = 'bottom', children, header, title, headerLeft, headerRight, showGrabber = true, dragToDismiss = true, dismissDragDistance = 80, maxHeightRatio = 0.92, animationDuration = 240, Container, style, contentContainerStyle, modalProps, onExited, testID, }) {
+    const top = edge === 'top';
     const screenHeight = useMemo(() => Dimensions.get('window').height, []);
-    const translateY = useRef(new Animated.Value(screenHeight)).current;
+    const hiddenY = top ? -screenHeight : screenHeight;
+    const translateY = useRef(new Animated.Value(hiddenY)).current;
     const scrimOpacity = useRef(new Animated.Value(0)).current;
     // The Modal itself un-mounts only once the close animation finishes, or
-    // the sheet would vanish instantly (no slide-down) the moment a caller
-    // flips `visible` to false.
+    // the sheet would vanish instantly (no slide) the moment a caller flips
+    // `visible` to false.
     const mounted = useAnimatedMount(visible, animationDuration, onExited);
-    // Drag-to-dismiss on the handle zone. Reads the latest props through refs
+    // Drag-to-dismiss on the grab zone. Reads the latest props through refs
     // so the responder (created once) never closes over a stale callback.
     const onRequestCloseRef = useRef(onRequestClose);
     onRequestCloseRef.current = onRequestClose;
@@ -79,23 +99,31 @@ export function BottomSheet({ visible, onRequestClose, colors, rtl = false, chil
     const dragPan = useRef(PanResponder.create({
         onMoveShouldSetPanResponder: (_e, g) => visibleRef.current &&
             dragEnabledRef.current &&
-            g.dy > 6 &&
+            (top ? g.dy < -6 : g.dy > 6) &&
             Math.abs(g.dy) > Math.abs(g.dx),
         onMoveShouldSetPanResponderCapture: (_e, g) => visibleRef.current &&
             dragEnabledRef.current &&
-            g.dy > 6 &&
+            (top ? g.dy < -6 : g.dy > 6) &&
             Math.abs(g.dy) > Math.abs(g.dx),
         onPanResponderMove: (_e, g) => {
             if (!visibleRef.current)
                 return;
-            // Only downward; a pull UP rubber-bands slightly so it reads as
-            // "the sheet is as high as it goes".
-            translateY.setValue(g.dy > 0 ? g.dy : g.dy * 0.15);
+            // Only toward the panel's free edge; a pull the other way
+            // rubber-bands slightly so it reads as "the sheet is as far as it
+            // goes".
+            if (top) {
+                translateY.setValue(g.dy < 0 ? g.dy : g.dy * 0.15);
+            }
+            else {
+                translateY.setValue(g.dy > 0 ? g.dy : g.dy * 0.15);
+            }
         },
         onPanResponderRelease: (_e, g) => {
             if (!visibleRef.current)
                 return;
-            const shouldClose = g.dy > dragDistanceRef.current || g.vy > 0.8;
+            const shouldClose = top
+                ? g.dy < -dragDistanceRef.current || g.vy < -0.8
+                : g.dy > dragDistanceRef.current || g.vy > 0.8;
             if (shouldClose) {
                 onRequestCloseRef.current();
                 return;
@@ -131,7 +159,7 @@ export function BottomSheet({ visible, onRequestClose, colors, rtl = false, chil
         else {
             Animated.parallel([
                 Animated.timing(translateY, {
-                    toValue: screenHeight,
+                    toValue: hiddenY,
                     duration: animationDuration,
                     useNativeDriver: true,
                 }),
@@ -142,9 +170,9 @@ export function BottomSheet({ visible, onRequestClose, colors, rtl = false, chil
                 }),
             ]).start();
         }
-        // translateY/scrimOpacity/screenHeight are refs/memo -- stable identity,
-        // deliberately left out so this effect only re-fires on the props that
-        // actually change.
+        // translateY/scrimOpacity/hiddenY are refs/derived from a memo -- stable
+        // identity, deliberately left out so this effect only re-fires on the
+        // props that actually change.
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [visible, animationDuration]);
     if (!mounted)
@@ -155,22 +183,25 @@ export function BottomSheet({ visible, onRequestClose, colors, rtl = false, chil
         : title !== undefined || headerLeft !== undefined || headerRight !== undefined
             ? (_jsx(SheetHeader, { left: headerLeft, title: title, right: headerRight, colors: colors, rtl: rtl }))
             : null;
+    const grabZoneProps = visible && dragToDismiss ? dragPan.panHandlers : null;
+    const grabber = showGrabber ? (_jsx(View, { style: [styles.grabber, { backgroundColor: colors.rim }] })) : null;
     return (_jsxs(Modal, { visible: true, transparent: true, animationType: "none", onRequestClose: onRequestClose, statusBarTranslucent: true, testID: testID, ...modalProps, children: [_jsx(Pressable, { style: StyleSheet.absoluteFillObject, pointerEvents: visible ? 'auto' : 'none', onPress: onRequestClose, accessibilityRole: "button", accessibilityLabel: "dismiss", children: _jsx(Animated.View, { style: [
                         StyleSheet.absoluteFillObject,
                         { backgroundColor: colors.scrim, opacity: scrimOpacity },
                     ] }) }), _jsx(Animated.View, { pointerEvents: visible ? 'auto' : 'none', style: [
                     styles.sheet,
+                    top ? styles.sheetTop : styles.sheetBottom,
                     {
                         backgroundColor: colors.panel,
                         maxHeight: `${maxHeightRatio * 100}%`,
                         transform: [{ translateY }],
                     },
                     style,
-                ], children: _jsx(Pressable, { onPress: () => { }, style: styles.sheetInner, children: _jsxs(Wrapper, { style: styles.sheetInner, children: [_jsxs(View, { style: styles.dragZone, ...(visible && dragToDismiss ? dragPan.panHandlers : null), children: [showGrabber ? (_jsx(View, { style: [styles.grabber, { backgroundColor: colors.rim }] })) : null, resolvedHeader] }), _jsx(View, { style: [styles.body, contentContainerStyle], children: children })] }) }) })] }));
+                ], children: _jsx(Pressable, { onPress: () => { }, style: styles.sheetInner, children: _jsx(Wrapper, { style: styles.sheetInner, children: top ? (_jsxs(_Fragment, { children: [resolvedHeader, _jsx(View, { style: [styles.body, contentContainerStyle], children: children }), _jsx(View, { style: styles.dragZone, ...grabZoneProps, children: grabber })] })) : (_jsxs(_Fragment, { children: [_jsxs(View, { style: styles.dragZone, ...grabZoneProps, children: [grabber, resolvedHeader] }), _jsx(View, { style: [styles.body, contentContainerStyle], children: children })] })) }) }) })] }));
 }
 /**
  * Keeps the sheet mounted for one more `duration` after `visible` goes
- * false, so the slide-down and scrim fade actually play instead of the
+ * false, so the slide-out and scrim fade actually play instead of the
  * Modal disappearing on the same frame the caller flips the flag.
  */
 function useAnimatedMount(visible, duration, onExited) {
@@ -197,10 +228,17 @@ const styles = StyleSheet.create({
         position: 'absolute',
         left: 0,
         right: 0,
+        overflow: 'hidden',
+    },
+    sheetBottom: {
         bottom: 0,
         borderTopLeftRadius: 24,
         borderTopRightRadius: 24,
-        overflow: 'hidden',
+    },
+    sheetTop: {
+        top: 0,
+        borderBottomLeftRadius: 24,
+        borderBottomRightRadius: 24,
     },
     sheetInner: {
         flexShrink: 1,
@@ -214,6 +252,7 @@ const styles = StyleSheet.create({
         borderRadius: 3,
         alignSelf: 'center',
         marginTop: 8,
+        marginBottom: 8,
     },
     header: {
         alignItems: 'center',

@@ -1,14 +1,19 @@
 /**
- * A native bottom sheet: rounded-top panel that slides up from the bottom
- * over a dimmed scrim, with an optional grab handle and a three-slot header
- * (left / centered title / right) -- iOS's own sheet-with-nav-bar shape,
- * and the same silhouette as a web bottom sheet (rounded top corners, a
- * centered title between two text buttons, a small grab affordance).
+ * A native edge sheet: rounded panel that slides in from the screen's top
+ * or bottom edge over a dimmed scrim, with an optional grab handle and a
+ * three-slot header (left / centered title / right) -- iOS's own
+ * sheet-with-nav-bar shape, and the same silhouette as a web bottom sheet
+ * (rounded corners at the free edge, a centered title between two text
+ * buttons, a small grab affordance).
  *
  * Ported from a GateOpen Figma-to-HTML redesign round of the Guests screens
  * (2026-09) -- that prototype's `.sheet`/`.sh-head`/`.grab` were themselves
  * generic (a title row + Cancel/Done + rounded corners), and every future
  * RN app of Aviv's needing a sheet would otherwise re-copy the same shape.
+ * `edge: 'top'` added 2026-10-01 for GateOpen's Welcome language picker
+ * (Aviv: "come from the top instead a reverse component" -- a dropdown
+ * list reads naturally anchored under its own trigger pill near the
+ * screen's top, not sliding up from the opposite edge).
  *
  * Deliberately animated with `Animated`, not RN's Modal's own
  * `animationType`, and mounted with `animationType="none"`: a fading Modal
@@ -17,12 +22,23 @@
  * lag fix). Driving the slide and the scrim's opacity ourselves means the
  * backdrop is tappable the instant it's visible, never a beat late.
  *
- * The sheet slides up from `Dimensions.get('window').height`, not from its
- * own measured height -- an RN Animated value can't reference "my own
- * height" without a layout round-trip, and starting from the full screen
- * height always fully hides the sheet regardless of its content, at the
- * cost of one extra frame the sheet spends already-off-screen before the
- * slide-in begins (imperceptible in practice).
+ * The sheet slides in from `Dimensions.get('window').height` (negated for
+ * `edge: 'top'`), not from its own measured height -- an RN Animated value
+ * can't reference "my own height" without a layout round-trip, and
+ * starting from the full screen height always fully hides the sheet
+ * regardless of its content, at the cost of one extra frame the sheet
+ * spends already-off-screen before the slide-in begins (imperceptible in
+ * practice).
+ *
+ * The grab handle sits at the panel's own FREE edge -- the one facing away
+ * from the screen edge it's anchored to, since that's the edge a user
+ * would actually pull on. For `edge: 'bottom'` (the default) that's the
+ * panel's top, grouped with the header into one draggable zone, same as
+ * before this prop existed. For `edge: 'top'` that's the panel's bottom,
+ * so the header renders separately, near the panel's anchored (top) edge,
+ * and only the grabber itself is draggable, after the body. Drag-to-
+ * dismiss direction mirrors the same way: pull toward the panel's own free
+ * edge to dismiss, rubber-banding slightly the other way.
  *
  * Deliberately excluded, same boundary as the rest of this package: no
  * icon library, no default `Container` beyond a plain `View` (a caller's
@@ -115,6 +131,10 @@ export interface BottomSheetProps {
   onRequestClose: () => void;
   colors: SheetColors;
   rtl?: boolean;
+  /** Which screen edge the panel anchors to and slides in from. Default
+   * `'bottom'` -- the original, only ever shape this component had before
+   * `'top'` was added. */
+  edge?: 'bottom' | 'top';
   children?: ReactNode;
   /** A fully custom header; takes over from `title`/`headerLeft`/
    * `headerRight` when given. */
@@ -122,14 +142,15 @@ export interface BottomSheetProps {
   title?: string;
   headerLeft?: ReactNode;
   headerRight?: ReactNode;
-  /** Default `true` -- the small grab affordance under the header, which
-   * (with `dragToDismiss`) really does drag: pulling the handle/header area
-   * down past `dismissDragDistance` calls `onRequestClose`. */
+  /** Default `true` -- the small grab affordance at the panel's free edge,
+   * which (with `dragToDismiss`) really does drag: pulling it toward that
+   * free edge past `dismissDragDistance` calls `onRequestClose`. */
   showGrabber?: boolean;
-  /** Default `true`. A downward drag on the grabber + header area follows
-   * the finger and, released past `dismissDragDistance` (or flicked), asks
-   * to close. Only that top zone is draggable on purpose: the body may
-   * scroll, and a body-wide drag would fight it. */
+  /** Default `true`. A drag toward the panel's free edge on the grabber
+   * (+ header, for `edge: 'bottom'`) zone follows the finger and, released
+   * past `dismissDragDistance` (or flicked), asks to close. Only that zone
+   * is draggable on purpose: the body may scroll, and a body-wide drag
+   * would fight it. */
   dragToDismiss?: boolean;
   /** Default 80 (points). */
   dismissDragDistance?: number;
@@ -158,13 +179,16 @@ export interface BottomSheetProps {
  * `BottomSheet` owns presentation (scrim, slide, rounded panel, optional
  * header); it never owns whether it's open. Mount it once per sheet and
  * flip `visible`, the same lifecycle every other component in this package
- * uses.
+ * uses. The name predates `edge: 'top'` and stays for compatibility --
+ * every existing caller is a bottom sheet, and "EdgeSheet" would have cost
+ * every one of them a rename for no behavior change.
  */
 export function BottomSheet({
   visible,
   onRequestClose,
   colors,
   rtl = false,
+  edge = 'bottom',
   children,
   header,
   title,
@@ -182,15 +206,17 @@ export function BottomSheet({
   onExited,
   testID,
 }: BottomSheetProps) {
+  const top = edge === 'top';
   const screenHeight = useMemo(() => Dimensions.get('window').height, []);
-  const translateY = useRef(new Animated.Value(screenHeight)).current;
+  const hiddenY = top ? -screenHeight : screenHeight;
+  const translateY = useRef(new Animated.Value(hiddenY)).current;
   const scrimOpacity = useRef(new Animated.Value(0)).current;
   // The Modal itself un-mounts only once the close animation finishes, or
-  // the sheet would vanish instantly (no slide-down) the moment a caller
-  // flips `visible` to false.
+  // the sheet would vanish instantly (no slide) the moment a caller flips
+  // `visible` to false.
   const mounted = useAnimatedMount(visible, animationDuration, onExited);
 
-  // Drag-to-dismiss on the handle zone. Reads the latest props through refs
+  // Drag-to-dismiss on the grab zone. Reads the latest props through refs
   // so the responder (created once) never closes over a stale callback.
   const onRequestCloseRef = useRef(onRequestClose);
   onRequestCloseRef.current = onRequestClose;
@@ -211,22 +237,29 @@ export function BottomSheet({
       onMoveShouldSetPanResponder: (_e, g) =>
         visibleRef.current &&
         dragEnabledRef.current &&
-        g.dy > 6 &&
+        (top ? g.dy < -6 : g.dy > 6) &&
         Math.abs(g.dy) > Math.abs(g.dx),
       onMoveShouldSetPanResponderCapture: (_e, g) =>
         visibleRef.current &&
         dragEnabledRef.current &&
-        g.dy > 6 &&
+        (top ? g.dy < -6 : g.dy > 6) &&
         Math.abs(g.dy) > Math.abs(g.dx),
       onPanResponderMove: (_e, g) => {
         if (!visibleRef.current) return;
-        // Only downward; a pull UP rubber-bands slightly so it reads as
-        // "the sheet is as high as it goes".
-        translateY.setValue(g.dy > 0 ? g.dy : g.dy * 0.15);
+        // Only toward the panel's free edge; a pull the other way
+        // rubber-bands slightly so it reads as "the sheet is as far as it
+        // goes".
+        if (top) {
+          translateY.setValue(g.dy < 0 ? g.dy : g.dy * 0.15);
+        } else {
+          translateY.setValue(g.dy > 0 ? g.dy : g.dy * 0.15);
+        }
       },
       onPanResponderRelease: (_e, g) => {
         if (!visibleRef.current) return;
-        const shouldClose = g.dy > dragDistanceRef.current || g.vy > 0.8;
+        const shouldClose = top
+          ? g.dy < -dragDistanceRef.current || g.vy < -0.8
+          : g.dy > dragDistanceRef.current || g.vy > 0.8;
         if (shouldClose) {
           onRequestCloseRef.current();
           return;
@@ -262,7 +295,7 @@ export function BottomSheet({
     } else {
       Animated.parallel([
         Animated.timing(translateY, {
-          toValue: screenHeight,
+          toValue: hiddenY,
           duration: animationDuration,
           useNativeDriver: true,
         }),
@@ -273,9 +306,9 @@ export function BottomSheet({
         }),
       ]).start();
     }
-    // translateY/scrimOpacity/screenHeight are refs/memo -- stable identity,
-    // deliberately left out so this effect only re-fires on the props that
-    // actually change.
+    // translateY/scrimOpacity/hiddenY are refs/derived from a memo -- stable
+    // identity, deliberately left out so this effect only re-fires on the
+    // props that actually change.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [visible, animationDuration]);
 
@@ -297,6 +330,11 @@ export function BottomSheet({
           )
         : null;
 
+  const grabZoneProps = visible && dragToDismiss ? dragPan.panHandlers : null;
+  const grabber = showGrabber ? (
+    <View style={[styles.grabber, { backgroundColor: colors.rim }]} />
+  ) : null;
+
   return (
     <Modal
       visible
@@ -310,7 +348,7 @@ export function BottomSheet({
       {/* pointerEvents gated by `visible`, not `mounted`: this Pressable
           is StyleSheet.absoluteFillObject over the WHOLE screen, and the
           Modal stays mounted for the length of the exit animation (see
-          useAnimatedMount) so the slide-down actually plays. Ungated, it
+          useAnimatedMount) so the slide actually plays. Ungated, it
           swallowed every touch on the entire screen -- including ones
           meant for whatever is underneath, like a guest page's preview
           button -- for that whole window after a caller (or a
@@ -333,6 +371,7 @@ export function BottomSheet({
         pointerEvents={visible ? 'auto' : 'none'}
         style={[
           styles.sheet,
+          top ? styles.sheetTop : styles.sheetBottom,
           {
             backgroundColor: colors.panel,
             maxHeight: `${maxHeightRatio * 100}%`,
@@ -345,29 +384,30 @@ export function BottomSheet({
             Pressable behind this panel. */}
         <Pressable onPress={() => {}} style={styles.sheetInner}>
           <Wrapper style={styles.sheetInner}>
-            {/* The drag zone: grabber + header. A View of its own so the
-                responder's touch area is exactly the top strip, with a
-                minimum height even when both are absent. */}
-            {/* `visible &&`, not just `dragToDismiss`: releasing the
-                responder the instant a close starts (caller-driven OR this
-                same drag's own release, below) stops a second gesture from
-                calling `translateY.setValue` -- a JS-driven write -- onto a
-                node the CLOSE `Animated.timing` (useNativeDriver: true,
-                still running for `animationDuration`) has moved to the
-                native side. That mix is a real RN Animated invariant
-                violation, not just a visual glitch: reproduced live as
-                "drag" errors on a tap that landed right after a
-                drag-to-dismiss close (GateOpen, 2026-09-28). */}
-            <View
-              style={styles.dragZone}
-              {...(visible && dragToDismiss ? dragPan.panHandlers : null)}
-            >
-              {showGrabber ? (
-                <View style={[styles.grabber, { backgroundColor: colors.rim }]} />
-              ) : null}
-              {resolvedHeader}
-            </View>
-            <View style={[styles.body, contentContainerStyle]}>{children}</View>
+            {top ? (
+              <>
+                {/* `edge: 'top'`: header sits at the panel's anchored
+                    (top) edge, NOT part of the draggable zone -- only the
+                    grabber, at the panel's own free (bottom) edge after
+                    the body, is. See this file's module doc. */}
+                {resolvedHeader}
+                <View style={[styles.body, contentContainerStyle]}>{children}</View>
+                <View style={styles.dragZone} {...grabZoneProps}>
+                  {grabber}
+                </View>
+              </>
+            ) : (
+              <>
+                {/* `edge: 'bottom'` (default, unchanged from before `edge`
+                    existed): grabber + header together form one draggable
+                    zone at the panel's own free (top) edge. */}
+                <View style={styles.dragZone} {...grabZoneProps}>
+                  {grabber}
+                  {resolvedHeader}
+                </View>
+                <View style={[styles.body, contentContainerStyle]}>{children}</View>
+              </>
+            )}
           </Wrapper>
         </Pressable>
       </Animated.View>
@@ -377,7 +417,7 @@ export function BottomSheet({
 
 /**
  * Keeps the sheet mounted for one more `duration` after `visible` goes
- * false, so the slide-down and scrim fade actually play instead of the
+ * false, so the slide-out and scrim fade actually play instead of the
  * Modal disappearing on the same frame the caller flips the flag.
  */
 function useAnimatedMount(
@@ -409,10 +449,17 @@ const styles = StyleSheet.create({
     position: 'absolute',
     left: 0,
     right: 0,
+    overflow: 'hidden',
+  },
+  sheetBottom: {
     bottom: 0,
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
-    overflow: 'hidden',
+  },
+  sheetTop: {
+    top: 0,
+    borderBottomLeftRadius: 24,
+    borderBottomRightRadius: 24,
   },
   sheetInner: {
     flexShrink: 1,
@@ -426,6 +473,7 @@ const styles = StyleSheet.create({
     borderRadius: 3,
     alignSelf: 'center',
     marginTop: 8,
+    marginBottom: 8,
   },
   header: {
     alignItems: 'center',
