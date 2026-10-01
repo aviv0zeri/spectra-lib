@@ -108,14 +108,18 @@ export function BottomSheet({ visible, onRequestClose, colors, rtl = false, edge
         onPanResponderMove: (_e, g) => {
             if (!visibleRef.current)
                 return;
-            // Only toward the panel's free edge; a pull the other way
-            // rubber-bands slightly so it reads as "the sheet is as far as it
-            // goes".
+            // Full 1:1 tracking toward the panel's free edge, in BOTH
+            // directions once the gesture has engaged -- a drag that reverses
+            // mid-gesture (up past the activation threshold, then back down)
+            // follows the finger back just as precisely, not damped. Only
+            // clamped at 0 (the resting, fully-shown position): nothing past
+            // it to reveal, so going further would just open a gap between
+            // the panel's own anchored edge and the real screen edge.
             if (top) {
-                translateY.setValue(g.dy < 0 ? g.dy : g.dy * 0.15);
+                translateY.setValue(Math.min(g.dy, 0));
             }
             else {
-                translateY.setValue(g.dy > 0 ? g.dy : g.dy * 0.15);
+                translateY.setValue(Math.max(g.dy, 0));
             }
         },
         onPanResponderRelease: (_e, g) => {
