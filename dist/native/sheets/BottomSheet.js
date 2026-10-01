@@ -105,7 +105,14 @@ export function BottomSheet({ visible, onRequestClose, colors, rtl = false, edge
     const mounted = useAnimatedMount(visible, animationDuration, onExited);
     useEffect(() => {
         translateY.value = withTiming(visible ? 0 : hiddenY, { duration: animationDuration });
-        scrimOpacity.value = withTiming(visible ? 1 : 0, { duration: animationDuration });
+        // No withTiming here: the panel's own slide (above) is the sheet's one
+        // animated exit, whether it's triggered by a caller flipping `visible`
+        // or by a drag-release past the dismiss threshold. A timed scrim
+        // cross-fade on top of that read as a second, competing animation --
+        // most visible right after a drag dismiss, where the scrim would fade
+        // on its own 240ms clock while the panel's slide is already mid-flight
+        // (or already done). The scrim now just tracks `visible` directly.
+        scrimOpacity.value = visible ? 1 : 0;
         // translateY/scrimOpacity are shared values -- stable identity,
         // deliberately left out so this effect only re-fires on the props
         // that actually change.
