@@ -468,16 +468,26 @@ const styles = StyleSheet.create({
   sheetInner: {
     flexShrink: 1,
   },
+  // 44, not the grabber's own ~21px (5 + 8 margin top/bottom): Apple's HIG
+  // minimum touch target. For `edge: 'bottom'` this zone also contains the
+  // header, whose own 44 `minHeight` already covered it -- but `edge:
+  // 'top'` (grabber alone, after the body, see this file's module doc)
+  // had nothing else supplying that height, so its real touchable area
+  // was the grabber's own ~21px. A small, careful drag starting just
+  // outside that strip missed the responder entirely and did nothing; a
+  // fast big one that happened to land on it read as a flick straight
+  // past the dismiss threshold -- exactly "little drags do nothing, big
+  // ones just close it" (Aviv, on-device).
   dragZone: {
-    minHeight: 24,
+    minHeight: 44,
+    width: '100%',
+    justifyContent: 'center',
   },
   grabber: {
     width: 40,
     height: 5,
     borderRadius: 3,
     alignSelf: 'center',
-    marginTop: 8,
-    marginBottom: 8,
   },
   header: {
     alignItems: 'center',
